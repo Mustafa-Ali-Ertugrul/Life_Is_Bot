@@ -69,7 +69,7 @@ async def test_create_event_sets_dedupe_fields(db_session: AsyncSession) -> None
 
 async def test_create_event_idempotent_without_related(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
-    when = now_in().replace(hour=9, minute=0, second=0, microsecond=0)
+    when = now_in("UTC").replace(hour=9, minute=0, second=0, microsecond=0)
 
     first = await reminder_service.create_event(
         db_session, user_id=user_id, bot_key=BotKey.STEP, scheduled_at=when
@@ -85,7 +85,7 @@ async def test_create_event_allows_duplicate_different_bot_same_day(
     db_session: AsyncSession,
 ) -> None:
     user_id = await _user(db_session)
-    when = now_in().replace(hour=9, minute=0, second=0, microsecond=0)
+    when = now_in("UTC").replace(hour=9, minute=0, second=0, microsecond=0)
 
     first = await reminder_service.create_event(
         db_session, user_id=user_id, bot_key=BotKey.STEP, scheduled_at=when
@@ -99,7 +99,7 @@ async def test_create_event_allows_duplicate_different_bot_same_day(
 
 async def test_create_event_reactivates_cancelled_same_day(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
-    when = now_in().replace(hour=9, minute=0, second=0, microsecond=0)
+    when = now_in("UTC").replace(hour=9, minute=0, second=0, microsecond=0)
 
     event = await _event(db_session, user_id, when=when)
     event.status = ReminderStatus.CANCELLED.value

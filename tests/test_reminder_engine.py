@@ -120,7 +120,7 @@ async def test_find_due_events_excludes_future_notify_after(db_session: AsyncSes
 async def test_find_due_events_includes_past_notify_after(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id)
-    event.notify_after = now_in() - timedelta(hours=1)
+    event.notify_after = now_in("UTC") - timedelta(hours=1)
     await db_session.commit()
 
     due = await reminder_service.find_due_events(db_session, now_in())
@@ -202,7 +202,7 @@ async def test_policy_suppresses_after_response(db_session: AsyncSession) -> Non
 async def test_snooze_reschedules_same_event(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id, bot_key=BotKey.MEDICATION, related_type="medication")
-    now = now_in()
+    now = now_in("UTC")
 
     await response_service.save_response(
         db_session, event.id, user_id, BotKey.MEDICATION, ResponseType.SNOOZED

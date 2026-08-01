@@ -26,7 +26,7 @@ async def reminder_tick() -> None:
         return
 
     async with async_session_factory() as session:
-        now = now_in()
+        now = now_in("UTC")
         due = await reminder_service.find_due_events(
             session, now, limit=settings.scheduler_batch_size
         )

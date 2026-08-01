@@ -178,7 +178,7 @@ async def _handle_reminder_callback(
                     session, event.id, user_id, bot_key, ResponseType.SNOOZED
                 )
                 await reminder_service.reschedule_event(
-                    session, event.id, now_in() + timedelta(minutes=minutes)
+                    session, event.id, now_in("UTC") + timedelta(minutes=minutes)
                 )
                 await query.edit_message_text(f"{minutes} dk sonra tekrar hatırlatacağım ⏰")
         except NotFoundError:

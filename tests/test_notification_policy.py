@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -147,6 +147,28 @@ async def test_policy_defers_during_quiet_hours(db_session: AsyncSession) -> Non
     assert decision["defer_until"] is not None
     assert decision["defer_until"] > now
     assert decision["defer_until"].astimezone(IST).hour == 7
+
+
+async def test_policy_defer_until_is_utc(db_session: AsyncSession) -> None:
+    """Deferred notify time must be canonicalized to UTC (tracks #29)."""
+    user = await _user(
+        db_session,
+        quiet_hours_enabled=True,
+        quiet_hours_start="23:00",
+        quiet_hours_end="07:00",
+    )
+    event_id = await _event_id(db_session, user.id, bot_key=BotKey.CORE)
+    event = await reminder_service.get_event(db_session, event_id)
+    assert event is not None
+    now = datetime(2026, 8, 1, 23, 30, tzinfo=IST)
+
+    decision = await evaluate_notification(db_session, user, event, now)
+
+    assert decision["action"] == "defer"
+    assert decision["defer_until"] is not None
+    assert decision["defer_until"].tzinfo is not None
+    assert decision["defer_until"].utcoffset() == timedelta(0)
+    assert decision["defer_until"].tzinfo == UTC
 
 
 async def test_policy_sends_outside_quiet_hours(db_session: AsyncSession) -> None:
