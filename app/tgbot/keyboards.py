@@ -7,10 +7,10 @@ from app.tgbot.messages import BOT_KEYS_TR
 
 def main_menu() -> InlineKeyboardMarkup:
     keyboard = [
-        [InlineKeyboardButton("BotlarÄ± YÃ¶net", callback_data=format_ui(UICallbackKind.BOT_LIST))],
+        [InlineKeyboardButton("Botları Yönet", callback_data=format_ui(UICallbackKind.BOT_LIST))],
         [InlineKeyboardButton("Ayarlar", callback_data=format_ui(UICallbackKind.SETTINGS))],
         [InlineKeyboardButton("Raporlar", callback_data=format_ui(UICallbackKind.REPORTS))],
-        [InlineKeyboardButton("YardÄ±m", callback_data=format_ui(UICallbackKind.HELP))],
+        [InlineKeyboardButton("Yardım", callback_data=format_ui(UICallbackKind.HELP))],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -19,9 +19,9 @@ def consent_menu() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(
-                "OnaylÄ±yorum âœ…", callback_data=format_ui(UICallbackKind.CONSENT_YES)
+                "Onaylıyorum ✅", callback_data=format_ui(UICallbackKind.CONSENT_YES)
             ),
-            InlineKeyboardButton("HayÄ±r", callback_data=format_ui(UICallbackKind.CONSENT_NO)),
+            InlineKeyboardButton("Hayır", callback_data=format_ui(UICallbackKind.CONSENT_NO)),
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -41,7 +41,7 @@ def bot_list(preferences: list[BotPreference]) -> InlineKeyboardMarkup:
             ]
         )
     keyboard.append(
-        [InlineKeyboardButton("â—€ï¸ Geri", callback_data=format_ui(UICallbackKind.MAIN_MENU))]
+        [InlineKeyboardButton("◀️ Geri", callback_data=format_ui(UICallbackKind.MAIN_MENU))]
     )
     return InlineKeyboardMarkup(keyboard)
 
@@ -50,7 +50,7 @@ def bot_detail(preference: BotPreference, can_toggle: bool) -> InlineKeyboardMar
     bot_key = preference.bot_key_enum
     keyboard: list[list[InlineKeyboardButton]] = []
     if can_toggle:
-        toggle_label = "Botu Kapat" if preference.enabled else "Botu AÃ§"
+        toggle_label = "Botu Kapat" if preference.enabled else "Botu Aç"
         keyboard.append(
             [
                 InlineKeyboardButton(
@@ -60,12 +60,12 @@ def bot_detail(preference: BotPreference, can_toggle: bool) -> InlineKeyboardMar
             ]
         )
     keyboard.append(
-        [InlineKeyboardButton("â—€ï¸ Geri", callback_data=format_ui(UICallbackKind.BOT_LIST))]
+        [InlineKeyboardButton("◀️ Geri", callback_data=format_ui(UICallbackKind.BOT_LIST))]
     )
     return InlineKeyboardMarkup(keyboard)
 
 
 def back_to_bots() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton("â—€ï¸ Geri", callback_data=format_ui(UICallbackKind.BOT_LIST))]]
+        [[InlineKeyboardButton("◀️ Geri", callback_data=format_ui(UICallbackKind.BOT_LIST))]]
     )

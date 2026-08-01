@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Istanbul"
     default_language: str = "tr"
     scheduler_interval_seconds: int = 60
+    scheduler_batch_size: int = 50
+    debug_scheduler: bool = False
     log_level: str = "INFO"
 
 
