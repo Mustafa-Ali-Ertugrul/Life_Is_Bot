@@ -163,9 +163,7 @@ async def qh_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
-async def toggle_notifications_cb(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
+async def toggle_notifications_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
     async with async_session_factory() as session:
@@ -177,9 +175,7 @@ async def toggle_notifications_cb(
     )
 
 
-async def disable_quiet_hours_cb(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
+async def disable_quiet_hours_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
     async with async_session_factory() as session:

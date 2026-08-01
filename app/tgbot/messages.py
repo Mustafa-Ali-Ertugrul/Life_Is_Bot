@@ -63,18 +63,15 @@ SETTINGS_NOTIFICATIONS_OFF = "Kapalı"
 SETTINGS_QUIET_HOURS_NONE = "Kapalı"
 SETTINGS_QUIET_HOURS_RANGE = "{start} - {end}"
 SETTINGS_ASK_TIMEZONE = (
-    "Yeni timezone'u IANA adıyla yaz (örn: Europe/Istanbul).\n\n"
-    "/iptal ile vazgeçebilirsin."
+    "Yeni timezone'u IANA adıyla yaz (örn: Europe/Istanbul).\n\n/iptal ile vazgeçebilirsin."
 )
 SETTINGS_INVALID_TIMEZONE = "Geçersiz timezone. IANA adı kullan (örn: Europe/Istanbul)."
 SETTINGS_TIMEZONE_UPDATED = "Timezone güncellendi: {timezone} ✅"
 SETTINGS_ASK_QUIET_START = (
-    "Sessiz saatlerin başlangıcı (HH:MM, örn: 23:00)?\n\n"
-    "/iptal ile vazgeçebilirsin."
+    "Sessiz saatlerin başlangıcı (HH:MM, örn: 23:00)?\n\n/iptal ile vazgeçebilirsin."
 )
 SETTINGS_ASK_QUIET_END = (
-    "Sessiz saatlerin bitişi (HH:MM, örn: 07:00)?\n\n"
-    "/iptal ile vazgeçebilirsin."
+    "Sessiz saatlerin bitişi (HH:MM, örn: 07:00)?\n\n/iptal ile vazgeçebilirsin."
 )
 SETTINGS_INVALID_TIME = "Saat formatı geçersiz. HH:MM şeklinde yaz (örn: 23:00)."
 SETTINGS_QUIET_HOURS_UPDATED = "Sessiz saatler ayarlandı: {start} - {end} 🌙"
