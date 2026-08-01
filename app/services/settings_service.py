@@ -1,11 +1,9 @@
-import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.quiet_hours import is_valid_hhmm
 from app.models import User
-
-_TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 
 def is_valid_timezone(name: str) -> bool:
@@ -14,10 +12,6 @@ def is_valid_timezone(name: str) -> bool:
     except (ZoneInfoNotFoundError, ValueError):
         return False
     return True
-
-
-def is_valid_hhmm(value: str) -> bool:
-    return _TIME_RE.fullmatch(value) is not None
 
 
 async def get_settings(session: AsyncSession, user_id: int) -> User:

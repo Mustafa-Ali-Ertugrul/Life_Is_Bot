@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
-from app.models import BotKey, ReminderEvent, ReminderStatus, ResponseType
+from app.models import BotKey, ReminderEvent, ReminderStatus, ResponseType, User
 from app.services import preference_service, reminder_service, response_service, user_service
 from tests.conftest import TELEGRAM_USER_ID
 
@@ -105,37 +106,97 @@ async def test_mark_notified_idempotent(db_session: AsyncSession) -> None:
     assert second is False
 
 
-async def test_should_skip_notify_when_preference_disabled(db_session: AsyncSession) -> None:
+async def test_find_due_events_excludes_future_notify_after(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    event = await _event(db_session, user_id)
+    event.notify_after = now_in() + timedelta(hours=1)
+    await db_session.commit()
+
+    due = await reminder_service.find_due_events(db_session, now_in())
+
+    assert due == []
+
+
+async def test_find_due_events_includes_past_notify_after(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    event = await _event(db_session, user_id)
+    event.notify_after = now_in() - timedelta(hours=1)
+    await db_session.commit()
+
+    due = await reminder_service.find_due_events(db_session, now_in())
+
+    assert len(due) == 1
+    assert due[0].id == event.id
+
+
+async def test_mark_suppressed_sets_status(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    event = await _event(db_session, user_id)
+
+    ok = await reminder_service.mark_suppressed(db_session, event.id)
+
+    assert ok is True
+    updated = await reminder_service.get_event(db_session, event.id)
+    assert updated is not None
+    assert updated.status == ReminderStatus.SUPPRESSED.value
+
+
+async def test_mark_suppressed_idempotent(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    event = await _event(db_session, user_id)
+
+    first = await reminder_service.mark_suppressed(db_session, event.id)
+    second = await reminder_service.mark_suppressed(db_session, event.id)
+
+    assert first is True
+    assert second is False
+
+
+async def test_policy_suppresses_when_preference_disabled(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id, bot_key=BotKey.SPORT)
     await preference_service.get_or_create_preference(db_session, user_id, BotKey.SPORT)
+    user = await db_session.get(User, user_id)
+    assert user is not None
+    user.consent_given = True
+    await db_session.commit()
 
-    skip = await reminder_service.should_skip_notify(db_session, event)
+    decision = await evaluate_notification(db_session, user, event, now_in())
 
-    assert skip is True
+    assert decision["action"] == "suppress"
+    assert decision["reason"] == "bot_disabled"
 
 
-async def test_should_skip_notify_when_preference_enabled(db_session: AsyncSession) -> None:
+async def test_policy_sends_when_preference_enabled(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id, bot_key=BotKey.SPORT)
     await preference_service.toggle_preference(db_session, user_id, BotKey.SPORT, enabled=True)
+    user = await db_session.get(User, user_id)
+    assert user is not None
+    user.consent_given = True
+    await db_session.commit()
 
-    skip = await reminder_service.should_skip_notify(db_session, event)
+    decision = await evaluate_notification(db_session, user, event, now_in())
 
-    assert skip is False
+    assert decision["action"] == "send_now"
 
 
-async def test_should_skip_notify_after_response(db_session: AsyncSession) -> None:
+async def test_policy_suppresses_after_response(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id)
     await preference_service.toggle_preference(db_session, user_id, BotKey.HABIT, enabled=True)
     await response_service.save_response(
         db_session, event.id, user_id, BotKey.HABIT, ResponseType.DONE
     )
+    user = await db_session.get(User, user_id)
+    assert user is not None
+    user.consent_given = True
+    await db_session.commit()
 
-    skip = await reminder_service.should_skip_notify(db_session, event)
+    decision = await evaluate_notification(db_session, user, event, now_in())
 
-    assert skip is True
+    assert decision["action"] == "suppress"
+    assert decision["reason"] == "not_scheduled"
 
 
 async def test_snooze_reschedules_same_event(db_session: AsyncSession) -> None:

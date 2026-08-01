@@ -1,11 +1,20 @@
 from app.core.config import settings
 from app.core.database import async_session_factory
 from app.core.logger import get_logger
+from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
+from app.models import NotificationLogStatus
 from app.services import habit_service, notification_service, reminder_service
 from app.tgbot.notifier import send_reminder
 
 logger = get_logger("scheduler.jobs")
+
+_SUPPRESS_LOG_STATUSES: dict[str, str] = {
+    "user_inactive": NotificationLogStatus.SUPPRESSED_USER_INACTIVE.value,
+    "consent_missing": NotificationLogStatus.SUPPRESSED_CONSENT_MISSING.value,
+    "notifications_disabled": NotificationLogStatus.SUPPRESSED_DISABLED.value,
+    "bot_disabled": NotificationLogStatus.SUPPRESSED_BOT_DISABLED.value,
+}
 
 
 async def reminder_tick() -> None:
@@ -17,11 +26,40 @@ async def reminder_tick() -> None:
         return
 
     async with async_session_factory() as session:
+        now = now_in()
         due = await reminder_service.find_due_events(
-            session, now_in(), limit=settings.scheduler_batch_size
+            session, now, limit=settings.scheduler_batch_size
         )
         for event in due:
-            if await reminder_service.should_skip_notify(session, event):
+            decision = await evaluate_notification(session, event.user, event, now)
+            action = decision["action"]
+            if action == "defer":
+                event.notify_after = decision["defer_until"]
+                await session.commit()
+                await notification_service.log_notification(
+                    session,
+                    user_id=event.user_id,
+                    reminder_event_id=event.id,
+                    message=f"reminder {event.id}",
+                    channel="telegram",
+                    status=NotificationLogStatus.DEFERRED_QUIET_HOURS.value,
+                )
+                continue
+            if action == "suppress":
+                if decision["reason"] in ("already_responded", "not_scheduled", "already_notified"):
+                    continue
+                suppressed = await reminder_service.mark_suppressed(session, event.id)
+                if not suppressed:
+                    logger.warning("reminder already handled", event_id=event.id)
+                    continue
+                await notification_service.log_notification(
+                    session,
+                    user_id=event.user_id,
+                    reminder_event_id=event.id,
+                    message=f"reminder {event.id}",
+                    channel="telegram",
+                    status=_SUPPRESS_LOG_STATUSES[decision["reason"]],
+                )
                 continue
             message_id = await send_reminder(bot, event)
             if message_id is None:
@@ -37,7 +75,7 @@ async def reminder_tick() -> None:
                 reminder_event_id=event.id,
                 message=f"reminder {event.id}",
                 channel="telegram",
-                status="sent",
+                status=NotificationLogStatus.SENT.value,
             )
     logger.info("reminder tick done", due_count=len(due))
 
