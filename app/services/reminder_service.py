@@ -1,13 +1,13 @@
 from datetime import date, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.timezone import get_user_timezone, now_in
-from app.models import BotKey, ReminderEvent, ReminderStatus, User, UserResponse
+from app.models import BotKey, ReminderEvent, ReminderStatus, User
 
 
 def build_reminder_dedupe_key(
@@ -142,6 +142,10 @@ async def find_due_events(
             ReminderEvent.status == ReminderStatus.SCHEDULED.value,
             ReminderEvent.notified_at.is_(None),
             ReminderEvent.scheduled_at <= now,
+            or_(
+                ReminderEvent.notify_after.is_(None),
+                ReminderEvent.notify_after <= now,
+            ),
         )
         .options(selectinload(ReminderEvent.user).selectinload(User.telegram_account))
         .order_by(ReminderEvent.scheduled_at)
@@ -164,33 +168,18 @@ async def mark_notified(session: AsyncSession, event_id: int) -> bool:
     return rowcount is not None and rowcount > 0
 
 
-async def should_skip_notify(session: AsyncSession, event: ReminderEvent) -> bool:
-    if event.status != ReminderStatus.SCHEDULED.value:
-        return True
-    if event.notified_at is not None:
-        return True
-
-    bot_key = BotKey(event.bot_key)
-    from app.services.preference_service import get_preference
-
-    preference = await get_preference(session, event.user_id, bot_key)
-    if preference is None:
-        return bot_key is not BotKey.CORE
-    if not preference.enabled:
-        return True
-
-    responses = await _existing_responses(session, event.id)
-    return len(responses) > 0
-
-
-async def _existing_responses(session: AsyncSession, event_id: int) -> list[UserResponse]:
+async def mark_suppressed(session: AsyncSession, event_id: int) -> bool:
     result = await session.execute(
-        select(UserResponse).where(
-            UserResponse.reminder_event_id == event_id,
-            UserResponse.is_current.is_(True),
+        update(ReminderEvent)
+        .where(
+            ReminderEvent.id == event_id,
+            ReminderEvent.status == ReminderStatus.SCHEDULED.value,
         )
+        .values(status=ReminderStatus.SUPPRESSED.value)
     )
-    return list(result.scalars().all())
+    await session.commit()
+    rowcount = result.rowcount  # type: ignore[attr-defined]
+    return rowcount is not None and rowcount > 0
 
 
 __all__ = [
@@ -202,6 +191,6 @@ __all__ = [
     "find_due_events",
     "get_event",
     "mark_notified",
+    "mark_suppressed",
     "reschedule_event",
-    "should_skip_notify",
 ]

@@ -53,7 +53,7 @@ async def generate_daily_report(
         if local_date != day:
             continue
         status = event.status
-        if status == ReminderStatus.CANCELLED.value:
+        if status in (ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value):
             continue
         if status == ReminderStatus.POSITIVE.value:
             completed.append(event_label(event))
@@ -94,7 +94,7 @@ async def generate_weekly_report(
         if not (week_start <= local_date < week_end):
             continue
         status = event.status
-        if status == ReminderStatus.CANCELLED.value:
+        if status in (ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value):
             continue
         weekday = local_date.isoweekday()
         counts = per_day.setdefault(weekday, [0, 0])

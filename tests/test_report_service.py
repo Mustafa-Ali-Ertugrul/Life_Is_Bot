@@ -274,3 +274,28 @@ async def test_daily_report_uses_given_day(db_session: AsyncSession) -> None:
     assert data["total"] == 1
     assert data["completed"] == 1
     assert data["date"] == yesterday.isoformat()
+
+
+async def test_daily_report_excludes_suppressed(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    await _event(db_session, user_id, scheduled_at=_today(), status=ReminderStatus.SUPPRESSED)
+
+    data = await report_service.generate_daily_report(db_session, user_id)
+
+    assert data["total"] == 0
+    assert data["unanswered"] == 0
+
+
+async def test_weekly_report_excludes_suppressed(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    await _event(
+        db_session,
+        user_id,
+        scheduled_at=_monday_at(),
+        status=ReminderStatus.SUPPRESSED,
+    )
+
+    data = await report_service.generate_weekly_report(db_session, user_id)
+
+    assert data["total"] == 0
+    assert data["unanswered"] == 0

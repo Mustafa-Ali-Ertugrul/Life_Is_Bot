@@ -17,6 +17,7 @@ class ReminderEvent(Base):
         Index("ix_reminder_events_scheduled_at", "scheduled_at"),
         Index("ix_reminder_events_related", "related_type", "related_id"),
         Index("ix_reminder_events_local_date", "scheduled_local_date"),
+        Index("ix_reminder_events_due", "status", "scheduled_at", "notify_after"),
         Index("uq_reminder_events_user_dedupe", "user_id", "dedupe_key", unique=True),
     )
 
@@ -29,6 +30,7 @@ class ReminderEvent(Base):
     scheduled_local_date: Mapped[date] = mapped_column(Date, nullable=False)
     dedupe_key: Mapped[str] = mapped_column(String(190), nullable=False)
     notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notify_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(32), default="scheduled")
     interpretation_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(
