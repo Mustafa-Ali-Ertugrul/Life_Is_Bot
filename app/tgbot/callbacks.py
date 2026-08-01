@@ -1,15 +1,21 @@
+from datetime import timedelta
+
 from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
 from app.core.database import async_session_factory
-from app.models import BotKey
-from app.services import preference_service, user_service
+from app.core.timezone import now_in
+from app.models import BotKey, ResponseType
+from app.services import preference_service, reminder_service, response_service, user_service
 from app.tgbot.callback_parser import (
+    HabitAction,
+    ReminderAction,
     ReminderCallback,
     UICallback,
     UICallbackKind,
     parse,
 )
+from app.tgbot.habit_handlers import show_habit_detail, show_habit_list, toggle_habit
 from app.tgbot.keyboards import bot_detail, bot_list, main_menu
 from app.tgbot.messages import (
     BOT_ACTIVATED,
@@ -40,10 +46,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     parsed = parse(query.data)
     if isinstance(parsed, ReminderCallback):
-        await _handle_reminder_callback(query, parsed)
+        await _handle_reminder_callback(update, context, query, parsed)
         return
     if parsed is None:
-        await query.answer("GeÃ§ersiz istek")
+        await query.answer("Geçersiz istek")
         return
     await _handle_ui_callback(update, context, query, parsed)
 
@@ -83,6 +89,19 @@ async def _handle_ui_callback(
         await _toggle_bot(query, user_id, parsed.bot_key)
         return
 
+    if parsed.kind is UICallbackKind.HABIT:
+        if parsed.habit_action is HabitAction.LIST:
+            await show_habit_list(update, context, parsed)
+            return
+        if parsed.habit_action is HabitAction.DETAIL:
+            await show_habit_detail(update, context, parsed)
+            return
+        if parsed.habit_action is HabitAction.TOGGLE:
+            await toggle_habit(update, context, parsed)
+            return
+        await query.answer("Geçersiz istek")
+        return
+
     if parsed.kind is UICallbackKind.CONSENT_YES:
         if user_id is None:
             user_id = await _ensure_user(context, update)
@@ -112,11 +131,61 @@ async def _handle_ui_callback(
         await query.answer()
         return
 
-    await query.answer("GeÃ§ersiz istek")
+    await query.answer("Geçersiz istek")
 
 
-async def _handle_reminder_callback(query: CallbackQuery, parsed: ReminderCallback) -> None:
-    await query.answer("HatÄ±rlatma sistemi yakÄ±nda aktif â³")
+async def _handle_reminder_callback(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    query: CallbackQuery,
+    parsed: ReminderCallback,
+) -> None:
+    user_id: int | None = context.user_data.get("user_id") if context.user_data else None
+    if user_id is None:
+        user_id = await _ensure_user(context, update)
+
+    async with async_session_factory() as session:
+        event = await reminder_service.get_event(session, parsed.event_id)
+        if event is None:
+            await query.answer("Bildirim bulunamadı", show_alert=True)
+            return
+        if event.user_id != user_id:
+            await query.answer("Bu bildirim size ait değil", show_alert=True)
+            return
+
+        bot_key = BotKey(event.bot_key)
+        if parsed.action is ReminderAction.DONE:
+            await response_service.save_response(
+                session, event.id, user_id, bot_key, ResponseType.DONE
+            )
+            await query.edit_message_text("Tamamlandı ✅")
+        elif parsed.action is ReminderAction.NOT_DONE:
+            await response_service.save_response(
+                session, event.id, user_id, bot_key, ResponseType.NOT_DONE
+            )
+            await query.edit_message_text("Kaydedildi ❌")
+        elif parsed.action is ReminderAction.SKIP:
+            await response_service.save_response(
+                session, event.id, user_id, bot_key, ResponseType.SKIPPED
+            )
+            await query.edit_message_text("Atlandı ⏭️")
+        elif parsed.action is ReminderAction.SNOOZE:
+            minutes = parsed.minutes or 10
+            await response_service.save_response(
+                session, event.id, user_id, bot_key, ResponseType.SNOOZED
+            )
+            await reminder_service.create_event(
+                session,
+                user_id=user_id,
+                bot_key=bot_key,
+                scheduled_at=now_in() + timedelta(minutes=minutes),
+                related_type=event.related_type,
+                related_id=event.related_id,
+                interpretation_json=event.interpretation_json,
+            )
+            await query.edit_message_text(f"{minutes} dk sonra tekrar hatırlatacağım ⏰")
+
+    await query.answer()
 
 
 async def _show_bot_list(query: CallbackQuery, user_id: int) -> None:

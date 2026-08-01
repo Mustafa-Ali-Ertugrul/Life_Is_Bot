@@ -1,9 +1,11 @@
 from app.models import BotKey
 from app.tgbot.callback_parser import (
+    HabitAction,
     ReminderAction,
     ReminderCallback,
     UICallback,
     UICallbackKind,
+    format_habit_ui,
     format_reminder,
     format_ui,
     parse,
@@ -36,6 +38,33 @@ def test_parse_ui_consent() -> None:
 
     assert parsed is not None
     assert parsed.kind is UICallbackKind.CONSENT_YES
+
+
+def test_format_habit_ui() -> None:
+    assert format_habit_ui(HabitAction.LIST) == "ui:habit:list"
+    assert format_habit_ui(HabitAction.NEW) == "ui:habit:new"
+    assert format_habit_ui(HabitAction.DETAIL, 42) == "ui:habit:detail:42"
+    assert format_habit_ui(HabitAction.TOGGLE, 7) == "ui:habit:toggle:7"
+
+
+def test_parse_ui_habit_actions() -> None:
+    parsed_list = parse_ui("ui:habit:list")
+    assert parsed_list is not None
+    assert parsed_list.kind is UICallbackKind.HABIT
+    assert parsed_list.habit_action is HabitAction.LIST
+    assert parsed_list.habit_id is None
+
+    parsed_detail = parse_ui("ui:habit:detail:42")
+    assert parsed_detail is not None
+    assert parsed_detail.habit_action is HabitAction.DETAIL
+    assert parsed_detail.habit_id == 42
+
+
+def test_parse_ui_habit_invalid() -> None:
+    assert parse_ui("ui:habit") is None
+    assert parse_ui("ui:habit:detail") is None
+    assert parse_ui("ui:habit:detail:abc") is None
+    assert parse_ui("ui:habit:bilinmeyen") is None
 
 
 def test_parse_reminder_done() -> None:
