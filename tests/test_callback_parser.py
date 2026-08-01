@@ -6,6 +6,7 @@ from app.tgbot.callback_parser import (
     ReportAction,
     SettingsAction,
     SportAction,
+    SupplementAction,
     UICallback,
     UICallbackKind,
     format_habit_ui,
@@ -13,6 +14,7 @@ from app.tgbot.callback_parser import (
     format_report_ui,
     format_settings_ui,
     format_sport_ui,
+    format_supplement_ui,
     format_ui,
     parse,
     parse_reminder,
@@ -108,6 +110,55 @@ def test_format_sport_roundtrip() -> None:
         assert parsed.sport_action is action
         if action in (SportAction.DETAIL, SportAction.TOGGLE):
             assert parsed.sport_plan_id == 12
+
+
+def test_format_supplement_ui() -> None:
+    assert format_supplement_ui(SupplementAction.MENU) == "ui:supplement:menu"
+    assert format_supplement_ui(SupplementAction.LIST) == "ui:supplement:list"
+    assert format_supplement_ui(SupplementAction.NEW) == "ui:supplement:new"
+    assert format_supplement_ui(SupplementAction.CONFIRM) == "ui:supplement:confirm"
+    assert format_supplement_ui(SupplementAction.CANCEL) == "ui:supplement:cancel"
+    assert format_supplement_ui(SupplementAction.DETAIL, 42) == "ui:supplement:detail:42"
+    assert format_supplement_ui(SupplementAction.TOGGLE, 7) == "ui:supplement:toggle:7"
+
+
+def test_parse_ui_supplement_actions() -> None:
+    parsed_list = parse_ui("ui:supplement:list")
+    assert parsed_list is not None
+    assert parsed_list.kind is UICallbackKind.SUPPLEMENT
+    assert parsed_list.supplement_action is SupplementAction.LIST
+    assert parsed_list.supplement_plan_id is None
+
+    parsed_detail = parse_ui("ui:supplement:detail:42")
+    assert parsed_detail is not None
+    assert parsed_detail.supplement_action is SupplementAction.DETAIL
+    assert parsed_detail.supplement_plan_id == 42
+
+    parsed_toggle = parse_ui("ui:supplement:toggle:7")
+    assert parsed_toggle is not None
+    assert parsed_toggle.supplement_action is SupplementAction.TOGGLE
+    assert parsed_toggle.supplement_plan_id == 7
+
+    parsed_confirm = parse_ui("ui:supplement:confirm")
+    assert parsed_confirm is not None
+    assert parsed_confirm.supplement_action is SupplementAction.CONFIRM
+    assert parsed_confirm.supplement_plan_id is None
+
+
+def test_parse_ui_supplement_invalid() -> None:
+    assert parse_ui("ui:supplement") is None
+    assert parse_ui("ui:supplement:detail") is None
+    assert parse_ui("ui:supplement:detail:abc") is None
+    assert parse_ui("ui:supplement:bilinmeyen") is None
+
+
+def test_format_supplement_roundtrip() -> None:
+    for action in SupplementAction:
+        parsed = parse_ui(format_supplement_ui(action, 12))
+        assert parsed is not None
+        assert parsed.supplement_action is action
+        if action in (SupplementAction.DETAIL, SupplementAction.TOGGLE):
+            assert parsed.supplement_plan_id == 12
 
 
 def test_format_report_ui() -> None:

@@ -184,6 +184,58 @@ SPORT_INVALID_DAYS = (
 SPORT_NOT_FOUND = "Spor planı bulunamadı."
 SPORT_DAYS_TR: dict[int, str] = HABIT_DAYS_TR
 
+SUPPLEMENT_MENU = (
+    "Supplement botu\n\nSupplement planlarını buradan yönetebilirsin.\n\nNe yapmak istersin?"
+)
+SUPPLEMENT_LIST_HEADER = "Supplement planların:\n\n{BOT_LIST}\n\nBir plan seç veya yenisini ekle:"
+SUPPLEMENT_LIST_ITEM = "{status} {name}"
+SUPPLEMENT_LIST_ITEM_ACTIVE = "✅"
+SUPPLEMENT_LIST_ITEM_INACTIVE = "⬜"
+SUPPLEMENT_LIST_EMPTY = (
+    "Henüz supplement planın yok.\n\n"
+    "Yeni plan eklemek için /supplement_ekle komutunu kullanabilirsin."
+)
+SUPPLEMENT_ASK_NAME = "Supplement adını yaz.\n\nÖrnek:\nOmega-3\nVitamin D\nMagnesium"
+SUPPLEMENT_ASK_DOSE = (
+    'Doz bilgisini yaz.\n\nÖrnek:\n1 kapsül\n1 damla\n5 mg\n\nDoz belirtmek istemiyorsan "yok" yaz.'
+)
+SUPPLEMENT_ASK_WITH_FOOD = "Nasıl kullanacaksın?\n\nAç karnına\nTok karnına\nFark etmez"
+SUPPLEMENT_ASK_DAYS = "Hangi günler?\n\nÖrnek:\nHer gün\nPazartesi, Çarşamba, Cuma\n1,3,5"
+SUPPLEMENT_ASK_TIME = "Saat kaçta?\n\nÖrnek:\n09:00\n21:30"
+SUPPLEMENT_ASK_DURATION = (
+    "Bu supplement kaç gün sürecek?\n\nSüresiz ise 0 yaz.\n\nÖrnek:\n0\n14\n30"
+)
+SUPPLEMENT_CONFIRM = "Supplement planı eklensin mi?"
+SUPPLEMENT_CREATED = "Supplement planın eklendi. ✅"
+SUPPLEMENT_CANCELLED = "Supplement planı ekleme iptal edildi."
+SUPPLEMENT_INVALID_NAME = "Geçersiz supplement adı. Lütfen bir isim yaz."
+SUPPLEMENT_INVALID_WITH_FOOD = (
+    "Kullanım şeklini anlayamadım.\n\n"
+    "Lütfen şunlardan birini yaz:\n"
+    "Aç karnına\n"
+    "Tok karnına\n"
+    "Fark etmez"
+)
+SUPPLEMENT_INVALID_DAYS = "Günleri anlayamadım. Örnek: Her gün veya Pazartesi, Çarşamba, Cuma"
+SUPPLEMENT_INVALID_TIME = "Saati anlayamadım. Örnek: 09:00"
+SUPPLEMENT_INVALID_DURATION = "Süreyi anlayamadım. Örnek: 0, 14, 30"
+SUPPLEMENT_DETAIL = (
+    "Supplement planı\n\n"
+    "Ad: {name}\n"
+    "Doz: {dose}\n"
+    "Kullanım: {with_food}\n"
+    "Günler: {days}\n"
+    "Saat: {time}\n"
+    "Süre: {duration}\n"
+    "Durum: {status}"
+)
+SUPPLEMENT_STATUS_ACTIVE = "Aktif"
+SUPPLEMENT_STATUS_INACTIVE = "Kapalı"
+SUPPLEMENT_TOGGLED_ON = "Supplement planı aktif edildi. ✅"
+SUPPLEMENT_TOGGLED_OFF = "Supplement planı pasif edildi."
+SUPPLEMENT_NOT_FOUND = "Supplement planı bulunamadı."
+SUPPLEMENT_DAYS_TR: dict[int, str] = HABIT_DAYS_TR
+
 BOT_KEYS_TR: dict[BotKey, str] = {
     BotKey.CORE: "Genel Rutin",
     BotKey.HABIT: "Rutin",
@@ -202,6 +254,9 @@ COMMANDS = [
     ("spor", "Spor menüsünü aç"),
     ("spor_ekle", "Yeni spor planı ekle"),
     ("spor_listesi", "Spor planlarını listele"),
+    ("supplement", "Supplement menüsünü aç"),
+    ("supplement_ekle", "Yeni supplement planı ekle"),
+    ("supplement_listesi", "Supplement planlarını listele"),
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
     ("yardim", "Yardım menüsü"),

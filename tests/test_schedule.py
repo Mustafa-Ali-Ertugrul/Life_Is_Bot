@@ -33,6 +33,12 @@ def test_parse_user_days_sorts() -> None:
     assert parse_user_days("5,1,3") == [1, 3, 5]
 
 
+def test_parse_user_days_every_day() -> None:
+    assert parse_user_days("her gün") == [1, 2, 3, 4, 5, 6, 7]
+    assert parse_user_days("Her gün") == [1, 2, 3, 4, 5, 6, 7]
+    assert parse_user_days("hergun") == [1, 2, 3, 4, 5, 6, 7]
+
+
 def test_parse_user_days_invalid_raises() -> None:
     with pytest.raises(ValueError):
         parse_user_days("bilinmeyen")
