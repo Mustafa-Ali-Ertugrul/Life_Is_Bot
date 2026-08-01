@@ -1,0 +1,23 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Veritabanı
+*.db
+*.db-shm
+*.db-wal
+
+# Loglar
+*.log
+
+# IDE
+.idea/
+.vscode/
