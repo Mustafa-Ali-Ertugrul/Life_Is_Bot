@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.models import BotKey
 from app.modules.base import ReminderModule
 from app.modules.habit import HabitModule
+from app.modules.sport import SportModule
 
 _MODULES: list[ReminderModule] = []
 
@@ -34,6 +35,7 @@ def get_module_by_related_type(related_type: str | None) -> ReminderModule | Non
 def setup_default_modules() -> None:
     _MODULES.clear()
     register_module(HabitModule())
+    register_module(SportModule())
 
 
 __all__ = [

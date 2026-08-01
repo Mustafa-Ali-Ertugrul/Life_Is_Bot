@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.bot_preference import BotPreference
     from app.models.habit import Habit
     from app.models.reminder_event import ReminderEvent
+    from app.models.sport_plan import SportPlan
     from app.models.telegram_account import TelegramAccount
 
 
@@ -52,5 +53,8 @@ class User(Base, TimestampMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
     habits: Mapped[list["Habit"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    sport_plans: Mapped[list["SportPlan"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )

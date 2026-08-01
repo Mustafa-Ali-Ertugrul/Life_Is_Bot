@@ -4,7 +4,7 @@ from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
 from app.models import NotificationLogStatus
-from app.services import habit_service, notification_service, reminder_service
+from app.services import habit_service, notification_service, reminder_service, sport_service
 from app.tgbot.notifier import send_reminder
 
 logger = get_logger("scheduler.jobs")
@@ -84,3 +84,9 @@ async def habit_daily_job() -> None:
     async with async_session_factory() as session:
         created = await habit_service.generate_today_events_for_all(session)
     logger.info("habit daily job done", created_count=created)
+
+
+async def sport_daily_job() -> None:
+    async with async_session_factory() as session:
+        created = await sport_service.generate_today_events_for_all(session)
+    logger.info("sport daily job done", created_count=created)
