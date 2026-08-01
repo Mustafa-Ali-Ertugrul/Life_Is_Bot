@@ -66,7 +66,10 @@ async def test_generate_today_events_creates_for_matching_day(db_session: AsyncS
     assert event.bot_key == BotKey.HABIT.value
     assert event.related_type == "habit"
     assert event.related_id == habit.id
-    assert event.scheduled_at.astimezone(get_user_timezone(settings.timezone)).hour == 8
+    assert (
+        event.scheduled_at.replace(tzinfo=UTC).astimezone(get_user_timezone(settings.timezone)).hour
+        == 8
+    )
     assert "Sabah sporu" in event.interpretation_json
 
 
@@ -82,8 +85,9 @@ async def test_generate_today_events_uses_user_timezone(db_session: AsyncSession
     assert len(events) == 1
     event = events[0]
     new_york = get_user_timezone("America/New_York")
-    assert event.scheduled_at.astimezone(new_york).hour == 9
-    assert event.scheduled_at.astimezone(UTC).hour == 13
+    as_utc = event.scheduled_at.replace(tzinfo=UTC)
+    assert as_utc.astimezone(new_york).hour == 9
+    assert as_utc.hour == 13
     assert event.scheduled_local_date == datetime(2026, 8, 1, tzinfo=new_york).date()
 
 
@@ -98,7 +102,7 @@ async def test_generate_today_events_treats_naive_now_as_utc(db_session: AsyncSe
     )
 
     assert len(events) == 1
-    assert events[0].scheduled_at.astimezone(UTC).hour == 13
+    assert events[0].scheduled_at.replace(tzinfo=UTC).hour == 13
 
 
 async def test_generate_today_events_uses_local_weekday(db_session: AsyncSession) -> None:

@@ -87,7 +87,7 @@ async def generate_today_events(
             second=0,
             microsecond=0,
         )
-        scheduled_at = local_scheduled.astimezone(get_user_timezone(settings.timezone))
+        scheduled_at = local_scheduled.astimezone(UTC)
         event = await reminder_service.create_event(
             session,
             user_id=user_id,
