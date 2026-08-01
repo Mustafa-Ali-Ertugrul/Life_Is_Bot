@@ -1,12 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.models import BotPreference, Habit
+from app.models import BotPreference, Habit, User
 from app.tgbot.callback_parser import (
     HabitAction,
     ReportAction,
+    SettingsAction,
     UICallbackKind,
     format_habit_ui,
     format_report_ui,
+    format_settings_ui,
     format_ui,
 )
 from app.tgbot.messages import BOT_KEYS_TR
@@ -133,4 +135,42 @@ def report_menu() -> InlineKeyboardMarkup:
         ],
         [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))],
     ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def settings_menu(user: User) -> InlineKeyboardMarkup:
+    keyboard: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                "🌍 Timezone Değiştir",
+                callback_data=format_settings_ui(SettingsAction.TIMEZONE),
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "🔔 Bildirimleri Değiştir",
+                callback_data=format_settings_ui(SettingsAction.NOTIFICATIONS_TOGGLE),
+            )
+        ],
+    ]
+    if user.quiet_hours_enabled:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    "🌙 Sessiz Saatleri Kapat",
+                    callback_data=format_settings_ui(SettingsAction.QUIET_HOURS_OFF),
+                )
+            ]
+        )
+    keyboard.append(
+        [
+            InlineKeyboardButton(
+                "🌙 Sessiz Saatleri Ayarla",
+                callback_data=format_settings_ui(SettingsAction.QUIET_HOURS),
+            )
+        ]
+    )
+    keyboard.append(
+        [InlineKeyboardButton("◀️ Geri", callback_data=format_ui(UICallbackKind.MAIN_MENU))]
+    )
     return InlineKeyboardMarkup(keyboard)

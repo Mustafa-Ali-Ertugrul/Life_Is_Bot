@@ -4,11 +4,13 @@ from app.tgbot.callback_parser import (
     ReminderAction,
     ReminderCallback,
     ReportAction,
+    SettingsAction,
     UICallback,
     UICallbackKind,
     format_habit_ui,
     format_reminder,
     format_report_ui,
+    format_settings_ui,
     format_ui,
     parse,
     parse_reminder,
@@ -72,6 +74,57 @@ def test_parse_ui_habit_invalid() -> None:
 def test_format_report_ui() -> None:
     assert format_report_ui(ReportAction.DAILY) == "ui:reports:daily"
     assert format_report_ui(ReportAction.WEEKLY) == "ui:reports:weekly"
+
+
+def test_format_settings_ui() -> None:
+    assert format_settings_ui(SettingsAction.MENU) == "ui:settings:menu"
+    assert format_settings_ui(SettingsAction.TIMEZONE) == "ui:settings:timezone"
+    assert (
+        format_settings_ui(SettingsAction.NOTIFICATIONS_TOGGLE)
+        == "ui:settings:notifications_toggle"
+    )
+    assert format_settings_ui(SettingsAction.QUIET_HOURS) == "ui:settings:quiet_hours"
+    assert format_settings_ui(SettingsAction.QUIET_HOURS_OFF) == "ui:settings:quiet_hours_off"
+
+
+def test_parse_ui_settings_actions() -> None:
+    parsed_root = parse_ui("ui:settings")
+    assert parsed_root is not None
+    assert parsed_root.kind is UICallbackKind.SETTINGS
+    assert parsed_root.settings_action is None
+
+    parsed_menu = parse_ui("ui:settings:menu")
+    assert parsed_menu is not None
+    assert parsed_menu.kind is UICallbackKind.SETTINGS
+    assert parsed_menu.settings_action is SettingsAction.MENU
+
+    parsed_tz = parse_ui("ui:settings:timezone")
+    assert parsed_tz is not None
+    assert parsed_tz.kind is UICallbackKind.SETTINGS
+    assert parsed_tz.settings_action is SettingsAction.TIMEZONE
+
+    parsed_toggle = parse_ui("ui:settings:notifications_toggle")
+    assert parsed_toggle is not None
+    assert parsed_toggle.settings_action is SettingsAction.NOTIFICATIONS_TOGGLE
+
+    parsed_qh = parse_ui("ui:settings:quiet_hours")
+    assert parsed_qh is not None
+    assert parsed_qh.settings_action is SettingsAction.QUIET_HOURS
+
+    parsed_qh_off = parse_ui("ui:settings:quiet_hours_off")
+    assert parsed_qh_off is not None
+    assert parsed_qh_off.settings_action is SettingsAction.QUIET_HOURS_OFF
+
+
+def test_parse_ui_settings_invalid() -> None:
+    assert parse_ui("ui:settings:bilinmeyen") is None
+
+
+def test_format_settings_roundtrip() -> None:
+    for action in SettingsAction:
+        parsed = parse_ui(format_settings_ui(action))
+        assert parsed is not None
+        assert parsed.settings_action is action
 
 
 def test_parse_ui_reports_actions() -> None:

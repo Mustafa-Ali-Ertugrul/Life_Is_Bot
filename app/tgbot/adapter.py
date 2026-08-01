@@ -12,11 +12,12 @@ from app.core.logger import get_logger
 from app.scheduler.engine import set_bot
 from app.scheduler.setup import setup_scheduler
 from app.tgbot.callbacks import handle_callback
-from app.tgbot.commands import cmd_ayarlar, cmd_botlar, cmd_start, cmd_yardim
+from app.tgbot.commands import cmd_botlar, cmd_start, cmd_yardim
 from app.tgbot.error_handler import handle_error
 from app.tgbot.habit_handlers import cmd_rutin, habit_conversation
 from app.tgbot.messages import COMMANDS
 from app.tgbot.report_handlers import cmd_rapor
+from app.tgbot.settings_handlers import cmd_ayarlar, settings_conversation
 
 logger = get_logger("telegram.adapter")
 
@@ -44,6 +45,7 @@ def build_application() -> ApplicationT:
     application.add_handler(CommandHandler("rapor", cmd_rapor))
     application.add_handler(CommandHandler("yardim", cmd_yardim))
     application.add_handler(habit_conversation())
+    application.add_handler(settings_conversation())
     application.add_handler(CommandHandler("rutin", cmd_rutin))
     application.add_handler(CallbackQueryHandler(handle_callback))
     application.add_error_handler(handle_error)
