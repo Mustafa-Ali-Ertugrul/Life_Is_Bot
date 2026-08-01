@@ -1,10 +1,9 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TypedDict
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.quiet_hours import is_within_quiet_hours, next_quiet_end
 from app.core.timezone import get_user_timezone
 from app.models import BotKey, ReminderEvent, ReminderStatus, User, UserResponse
@@ -58,7 +57,7 @@ async def evaluate_notification(
             return NotificationDecision(
                 action="defer",
                 reason="quiet_hours",
-                defer_until=defer_until.astimezone(get_user_timezone(settings.timezone)),
+                defer_until=defer_until.astimezone(UTC),
             )
 
     return NotificationDecision(action="send_now", reason="ok", defer_until=None)
