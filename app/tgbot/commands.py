@@ -12,7 +12,6 @@ from app.tgbot.messages import (
     BOT_LIST_ITEM_INACTIVE,
     CONSENT_TEXT,
     HELP,
-    SETTINGS_STUB,
     WELCOME,
 )
 
@@ -60,11 +59,6 @@ async def cmd_botlar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await update.effective_message.reply_text(
         BOT_LIST_HEADER.format(BOT_LIST="\n".join(lines)), reply_markup=bot_list(preferences)
     )
-
-
-async def cmd_ayarlar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    assert update.effective_message is not None
-    await update.effective_message.reply_text(SETTINGS_STUB)
 
 
 async def cmd_yardim(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

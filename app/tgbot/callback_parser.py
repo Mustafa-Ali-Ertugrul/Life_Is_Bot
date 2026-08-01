@@ -31,6 +31,14 @@ class ReportAction(StrEnum):
     WEEKLY = "weekly"
 
 
+class SettingsAction(StrEnum):
+    MENU = "menu"
+    TIMEZONE = "timezone"
+    NOTIFICATIONS_TOGGLE = "notifications_toggle"
+    QUIET_HOURS = "quiet_hours"
+    QUIET_HOURS_OFF = "quiet_hours_off"
+
+
 class ReminderAction(StrEnum):
     DONE = "d"
     NOT_DONE = "n"
@@ -45,6 +53,7 @@ class UICallback:
     habit_action: HabitAction | None = None
     habit_id: int | None = None
     report_action: ReportAction | None = None
+    settings_action: SettingsAction | None = None
 
 
 @dataclass(frozen=True)
@@ -72,6 +81,10 @@ def format_habit_ui(action: HabitAction, habit_id: int | None = None) -> str:
 
 def format_report_ui(action: ReportAction) -> str:
     return f"{UI_PREFIX}{UICallbackKind.REPORTS.value}:{action.value}"
+
+
+def format_settings_ui(action: SettingsAction) -> str:
+    return f"{UI_PREFIX}{UICallbackKind.SETTINGS.value}:{action.value}"
 
 
 def format_reminder(event_id: int, action: ReminderAction, minutes: int | None = None) -> str:
@@ -121,12 +134,20 @@ def parse_ui(data: str) -> UICallback | None:
                 report_action = ReportAction(parts[1])
             except ValueError:
                 return None
+    settings_action: SettingsAction | None = None
+    if kind is UICallbackKind.SETTINGS:
+        if len(parts) >= 2:
+            try:
+                settings_action = SettingsAction(parts[1])
+            except ValueError:
+                return None
     return UICallback(
         kind=kind,
         bot_key=bot_key,
         habit_action=habit_action,
         habit_id=habit_id,
         report_action=report_action,
+        settings_action=settings_action,
     )
 
 
