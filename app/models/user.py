@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -18,6 +19,7 @@ class User(Base, TimestampMixin):
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Istanbul")
     language: Mapped[str] = mapped_column(String(8), default="tr")
     consent_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     telegram_account: Mapped["TelegramAccount | None"] = relationship(

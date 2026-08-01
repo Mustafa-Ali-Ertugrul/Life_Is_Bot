@@ -64,3 +64,14 @@ async def find_or_create_by_telegram_id(
 async def count_active_users(session: AsyncSession) -> int:
     result = await session.execute(select(User).where(User.is_active.is_(True)))
     return len(result.scalars().all())
+
+
+async def grant_consent(session: AsyncSession, user_id: int) -> User:
+    user = await session.get(User, user_id)
+    if user is None:
+        raise ValueError(f"Kullanıcı bulunamadı: {user_id}")
+    if not user.consent_given:
+        user.consent_given = True
+        user.consented_at = now_in()
+        await session.commit()
+    return user

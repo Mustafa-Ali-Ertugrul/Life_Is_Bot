@@ -8,6 +8,21 @@ WELCOME = (
     "Ne yapmak istersin?"
 )
 
+CONSENT_TEXT = (
+    "Başlamadan önce kısa bir bilgilendirme 📋\n\n"
+    "• Bu bot sağlık ve rutin verilerini işleyebilir.\n"
+    "• Verilerin bu sistemde saklanır ve sadece sana özel kullanılır.\n"
+    "• Tıbbi teşhis koymaz.\n"
+    "• Acil durumlarda mutlaka bir sağlık profesyoneline başvur.\n\n"
+    "Devam etmek için onayını gerekiyor:"
+)
+
+CONSENT_GRANTED = "Onayın alındı, teşekkürler! ✅"
+CONSENT_DENIED = (
+    "Onay verilmediği için RutinBot kullanılamıyor. "
+    "İstediğin zaman /start ile tekrar deneyebilirsin."
+)
+
 BOT_LIST_HEADER = "Botlar:\n\n{BOT_LIST}\n\nBir bot seç:"
 
 BOT_LIST_ITEM = "{status} {label}"

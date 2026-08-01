@@ -33,4 +33,31 @@ class ResponseType(StrEnum):
     SKIPPED = "skipped"
 
 
-__all__ = ["BotKey", "ReminderStatus", "ResponseType"]
+class ConsentRequirement(StrEnum):
+    NONE = "none"
+    RECOMMENDED = "recommended"
+    REQUIRED = "required"
+
+
+CONSENT_REQUIREMENTS: dict[BotKey, ConsentRequirement] = {
+    BotKey.CORE: ConsentRequirement.NONE,
+    BotKey.HABIT: ConsentRequirement.RECOMMENDED,
+    BotKey.SPORT: ConsentRequirement.RECOMMENDED,
+    BotKey.SUPPLEMENT: ConsentRequirement.RECOMMENDED,
+    BotKey.STEP: ConsentRequirement.RECOMMENDED,
+    BotKey.ASSESSMENT: ConsentRequirement.REQUIRED,
+    BotKey.MEDICATION: ConsentRequirement.REQUIRED,
+}
+
+
+def consent_requirement_for(bot_key: BotKey) -> ConsentRequirement:
+    return CONSENT_REQUIREMENTS[bot_key]
+
+
+__all__ = [
+    "BotKey",
+    "ConsentRequirement",
+    "ReminderStatus",
+    "ResponseType",
+    "consent_requirement_for",
+]
