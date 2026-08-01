@@ -1,0 +1,109 @@
+from dataclasses import dataclass
+from enum import StrEnum
+
+from app.models import BotKey
+
+
+class UICallbackKind(StrEnum):
+    MAIN_MENU = "menu"
+    BOT_LIST = "bots"
+    BOT_DETAIL = "detail"
+    BOT_TOGGLE = "toggle"
+    SETTINGS = "settings"
+    REPORTS = "reports"
+    HELP = "help"
+    CONSENT_YES = "consent:yes"
+    CONSENT_NO = "consent:no"
+
+
+class ReminderAction(StrEnum):
+    DONE = "d"
+    NOT_DONE = "n"
+    SNOOZE = "s"
+    SKIP = "x"
+
+
+@dataclass(frozen=True)
+class UICallback:
+    kind: UICallbackKind
+    bot_key: BotKey | None = None
+
+
+@dataclass(frozen=True)
+class ReminderCallback:
+    event_id: int
+    action: ReminderAction
+    minutes: int | None = None
+
+
+UI_PREFIX = "ui:"
+REMINDER_PREFIX = "r:"
+
+
+def format_ui(kind: UICallbackKind, bot_key: BotKey | None = None) -> str:
+    if bot_key is None:
+        return f"{UI_PREFIX}{kind.value}"
+    return f"{UI_PREFIX}{kind.value}:{bot_key.value}"
+
+
+def format_reminder(event_id: int, action: ReminderAction, minutes: int | None = None) -> str:
+    if action is ReminderAction.SNOOZE and minutes is not None:
+        return f"{REMINDER_PREFIX}{event_id}:{action.value}{minutes}"
+    return f"{REMINDER_PREFIX}{event_id}:{action.value}"
+
+
+def parse_ui(data: str) -> UICallback | None:
+    if not data.startswith(UI_PREFIX):
+        return None
+    rest = data[len(UI_PREFIX) :]
+    if ":" in rest and rest in UICallbackKind:
+        return UICallback(kind=UICallbackKind(rest))
+    parts = rest.split(":")
+    if not parts or parts[0] not in UICallbackKind:
+        return None
+    kind = UICallbackKind(parts[0])
+    bot_key: BotKey | None = None
+    if kind in (UICallbackKind.BOT_DETAIL, UICallbackKind.BOT_TOGGLE):
+        if len(parts) < 2:
+            return None
+        try:
+            bot_key = BotKey(parts[1])
+        except ValueError:
+            return None
+    return UICallback(kind=kind, bot_key=bot_key)
+
+
+def parse_reminder(data: str) -> ReminderCallback | None:
+    if not data.startswith(REMINDER_PREFIX):
+        return None
+    parts = data[len(REMINDER_PREFIX) :].split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        event_id = int(parts[0])
+    except ValueError:
+        return None
+
+    action_part = parts[1]
+    minutes: int | None = None
+    if action_part.startswith(ReminderAction.SNOOZE.value) and len(action_part) > 1:
+        action = ReminderAction.SNOOZE
+        try:
+            minutes = int(action_part[len(ReminderAction.SNOOZE.value) :])
+        except ValueError:
+            return None
+        if minutes <= 0:
+            return None
+    elif action_part in ReminderAction:
+        action = ReminderAction(action_part)
+    else:
+        return None
+
+    return ReminderCallback(event_id=event_id, action=action, minutes=minutes)
+
+
+def parse(data: str) -> UICallback | ReminderCallback | None:
+    ui = parse_ui(data)
+    if ui is not None:
+        return ui
+    return parse_reminder(data)

@@ -1,0 +1,92 @@
+from app.models import BotKey
+from app.tgbot.callback_parser import (
+    ReminderAction,
+    ReminderCallback,
+    UICallback,
+    UICallbackKind,
+    format_reminder,
+    format_ui,
+    parse,
+    parse_reminder,
+    parse_ui,
+)
+
+
+def test_format_ui_menu() -> None:
+    assert format_ui(UICallbackKind.MAIN_MENU) == "ui:menu"
+    assert format_ui(UICallbackKind.BOT_TOGGLE, BotKey.SPORT) == "ui:toggle:sport_bot"
+
+
+def test_parse_ui_detail() -> None:
+    parsed = parse_ui("ui:detail:sport_bot")
+
+    assert parsed is not None
+    assert parsed.kind is UICallbackKind.BOT_DETAIL
+    assert parsed.bot_key is BotKey.SPORT
+
+
+def test_parse_ui_unknown_kind_returns_none() -> None:
+    assert parse_ui("ui:unknown") is None
+    assert parse_ui("ui:detail") is None
+    assert parse_ui("ui:detail:bilinmeyen_bot") is None
+
+
+def test_parse_ui_consent() -> None:
+    parsed = parse_ui("ui:consent:yes")
+
+    assert parsed is not None
+    assert parsed.kind is UICallbackKind.CONSENT_YES
+
+
+def test_parse_reminder_done() -> None:
+    parsed = parse_reminder("r:9001:d")
+
+    assert parsed is not None
+    assert parsed.event_id == 9001
+    assert parsed.action is ReminderAction.DONE
+    assert parsed.minutes is None
+
+
+def test_parse_reminder_snooze() -> None:
+    parsed = parse_reminder("r:9001:s10")
+
+    assert parsed is not None
+    assert parsed.action is ReminderAction.SNOOZE
+    assert parsed.minutes == 10
+
+
+def test_parse_reminder_invalid() -> None:
+    assert parse_reminder("r:abc:d") is None
+    assert parse_reminder("r:9001:z") is None
+    assert parse_reminder("r:9001:s0") is None
+    assert parse_reminder("r:9001") is None
+    assert parse_reminder("9001:d") is None
+
+
+def test_format_reminder_roundtrip() -> None:
+    data = format_reminder(123, ReminderAction.NOT_DONE)
+    parsed = parse_reminder(data)
+
+    assert parsed is not None
+    assert parsed.event_id == 123
+    assert parsed.action is ReminderAction.NOT_DONE
+
+    snooze_data = format_reminder(123, ReminderAction.SNOOZE, minutes=15)
+    snooze = parse_reminder(snooze_data)
+    assert snooze is not None
+    assert snooze.minutes == 15
+
+
+def test_parse_routes_by_namespace() -> None:
+    ui = parse("ui:bots")
+    reminder = parse("r:42:d")
+
+    assert isinstance(ui, UICallback)
+    assert ui.kind is UICallbackKind.BOT_LIST
+    assert isinstance(reminder, ReminderCallback)
+    assert reminder.event_id == 42
+
+
+def test_callback_data_within_telegram_limit() -> None:
+    longest = format_reminder(9_999_999, ReminderAction.SNOOZE, minutes=999)
+    assert len(longest) <= 64

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -8,6 +8,11 @@ from app.models.base import Base
 
 class ReminderEvent(Base):
     __tablename__ = "reminder_events"
+    __table_args__ = (
+        Index("ix_reminder_events_user_status", "user_id", "status"),
+        Index("ix_reminder_events_scheduled_at", "scheduled_at"),
+        Index("ix_reminder_events_related", "related_type", "related_id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)

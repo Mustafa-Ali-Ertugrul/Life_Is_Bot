@@ -3,13 +3,14 @@ from telegram.ext import ContextTypes
 
 from app.core.database import async_session_factory
 from app.services import preference_service, user_service
-from app.telegram.keyboards import bot_list, main_menu
-from app.telegram.messages import (
+from app.tgbot.keyboards import bot_list, consent_menu, main_menu
+from app.tgbot.messages import (
     BOT_KEYS_TR,
     BOT_LIST_HEADER,
     BOT_LIST_ITEM,
     BOT_LIST_ITEM_ACTIVE,
     BOT_LIST_ITEM_INACTIVE,
+    CONSENT_TEXT,
     HELP,
     REPORT_STUB,
     SETTINGS_STUB,
@@ -32,6 +33,9 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             telegram_user.first_name,
         )
         context.user_data["user_id"] = user.id  # type: ignore[index]
+        if not user.consent_given:
+            await update.effective_message.reply_text(CONSENT_TEXT, reply_markup=consent_menu())
+            return
 
     await update.effective_message.reply_text(WELCOME, reply_markup=main_menu())
 

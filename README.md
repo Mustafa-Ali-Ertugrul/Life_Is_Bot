@@ -11,6 +11,11 @@ Telegram tabanlı sağlık ve rutin takip botu. Günlük rutinler, spor, supplem
 - Ortak yanıt kayıtları (`user_responses`, `is_current` mantığı)
 - Bildirim logları ve audit log
 - APScheduler ile 1 dakikalık tick görevi (Faz 1'de gerçek hatırlatma mantığı)
+- Global hata yakalayıcı (PII redaction ile)
+- Kullanıcı onay akışı (`consent_given` / `consented_at`)
+- Standart callback formatı: `ui:` (menü) ve `r:` (hatırlatma yanıtı) namespace'leri
+- Sorgu index'leri (reminder_events, user_responses, notification_logs)
+- GitHub Actions CI (mypy --strict, ruff, pytest)
 
 ### Komutlar
 
@@ -35,7 +40,7 @@ cp .env.example .env
 uv run alembic upgrade head
 
 # 4. Botu başlat
-uv run python app/main.py
+uv run python -m app.main
 ```
 
 ## Geliştirme

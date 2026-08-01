@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -8,6 +8,7 @@ from app.models.base import Base
 
 class NotificationLog(Base):
     __tablename__ = "notification_logs"
+    __table_args__ = (Index("ix_notification_logs_user_sent", "user_id", "sent_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     reminder_event_id: Mapped[int | None] = mapped_column(ForeignKey("reminder_events.id"))
