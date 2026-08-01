@@ -13,6 +13,7 @@ from app.models.enums import (
 from app.models.habit import Habit
 from app.models.notification_log import NotificationLog
 from app.models.reminder_event import ReminderEvent
+from app.models.sport_plan import SportPlan
 from app.models.telegram_account import TelegramAccount
 from app.models.user import User
 from app.models.user_response import UserResponse
@@ -30,6 +31,7 @@ __all__ = [
     "ReminderEvent",
     "ReminderStatus",
     "ResponseType",
+    "SportPlan",
     "TelegramAccount",
     "TimestampMixin",
     "User",

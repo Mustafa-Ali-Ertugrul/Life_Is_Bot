@@ -9,11 +9,13 @@ from app.modules.registry import (
     register_module,
     setup_default_modules,
 )
+from app.modules.sport import SportModule
 
 __all__ = [
     "EventGenerationContext",
     "HabitModule",
     "ReminderModule",
+    "SportModule",
     "get_module_by_bot_key",
     "get_module_by_related_type",
     "get_modules",
