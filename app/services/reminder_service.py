@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.exc import IntegrityError
@@ -8,6 +8,12 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus, User
+
+
+def _canonical_utc(value: datetime) -> datetime:
+    if value.tzinfo is not None:
+        return value.astimezone(UTC)
+    return value
 
 
 def build_reminder_dedupe_key(
@@ -30,6 +36,7 @@ async def create_event(
     related_id: int | None = None,
     interpretation_json: str = "{}",
 ) -> ReminderEvent:
+    scheduled_at = _canonical_utc(scheduled_at)
     scheduled_local_date = await _scheduled_local_date(session, user_id, scheduled_at)
     dedupe_key = build_reminder_dedupe_key(
         bot_key.value, related_type, related_id, scheduled_local_date
@@ -84,6 +91,7 @@ async def reschedule_event(
 async def _reactivate(
     session: AsyncSession, event: ReminderEvent, scheduled_at: datetime
 ) -> ReminderEvent:
+    scheduled_at = _canonical_utc(scheduled_at)
     scheduled_local_date = await _scheduled_local_date(session, event.user_id, scheduled_at)
     event.scheduled_at = scheduled_at
     event.scheduled_local_date = scheduled_local_date
@@ -112,9 +120,7 @@ async def _find_by_dedupe(
 async def _scheduled_local_date(
     session: AsyncSession, user_id: int, scheduled_at: datetime
 ) -> date:
-    local = scheduled_at
-    if local.tzinfo is None:
-        local = local.replace(tzinfo=get_user_timezone(settings.timezone))
+    local = _canonical_utc(scheduled_at)
     tz_name = await _user_timezone_name(session, user_id)
     return local.astimezone(get_user_timezone(tz_name)).date()
 
@@ -136,6 +142,7 @@ async def get_event(session: AsyncSession, event_id: int) -> ReminderEvent | Non
 async def find_due_events(
     session: AsyncSession, now: datetime, limit: int = 50
 ) -> list[ReminderEvent]:
+    now = _canonical_utc(now)
     result = await session.execute(
         select(ReminderEvent)
         .where(
