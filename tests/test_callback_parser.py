@@ -5,12 +5,14 @@ from app.tgbot.callback_parser import (
     ReminderCallback,
     ReportAction,
     SettingsAction,
+    SportAction,
     UICallback,
     UICallbackKind,
     format_habit_ui,
     format_reminder,
     format_report_ui,
     format_settings_ui,
+    format_sport_ui,
     format_ui,
     parse,
     parse_reminder,
@@ -69,6 +71,43 @@ def test_parse_ui_habit_invalid() -> None:
     assert parse_ui("ui:habit:detail") is None
     assert parse_ui("ui:habit:detail:abc") is None
     assert parse_ui("ui:habit:bilinmeyen") is None
+
+
+def test_format_sport_ui() -> None:
+    assert format_sport_ui(SportAction.MENU) == "ui:sport:menu"
+    assert format_sport_ui(SportAction.LIST) == "ui:sport:list"
+    assert format_sport_ui(SportAction.NEW) == "ui:sport:new"
+    assert format_sport_ui(SportAction.DETAIL, 42) == "ui:sport:detail:42"
+    assert format_sport_ui(SportAction.TOGGLE, 7) == "ui:sport:toggle:7"
+
+
+def test_parse_ui_sport_actions() -> None:
+    parsed_list = parse_ui("ui:sport:list")
+    assert parsed_list is not None
+    assert parsed_list.kind is UICallbackKind.SPORT
+    assert parsed_list.sport_action is SportAction.LIST
+    assert parsed_list.sport_plan_id is None
+
+    parsed_detail = parse_ui("ui:sport:detail:42")
+    assert parsed_detail is not None
+    assert parsed_detail.sport_action is SportAction.DETAIL
+    assert parsed_detail.sport_plan_id == 42
+
+
+def test_parse_ui_sport_invalid() -> None:
+    assert parse_ui("ui:sport") is None
+    assert parse_ui("ui:sport:detail") is None
+    assert parse_ui("ui:sport:detail:abc") is None
+    assert parse_ui("ui:sport:bilinmeyen") is None
+
+
+def test_format_sport_roundtrip() -> None:
+    for action in SportAction:
+        parsed = parse_ui(format_sport_ui(action, 12))
+        assert parsed is not None
+        assert parsed.sport_action is action
+        if action in (SportAction.DETAIL, SportAction.TOGGLE):
+            assert parsed.sport_plan_id == 12
 
 
 def test_format_report_ui() -> None:

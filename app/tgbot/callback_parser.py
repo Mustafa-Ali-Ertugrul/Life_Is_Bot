@@ -10,6 +10,7 @@ class UICallbackKind(StrEnum):
     BOT_DETAIL = "detail"
     BOT_TOGGLE = "toggle"
     HABIT = "habit"
+    SPORT = "sport"
     SETTINGS = "settings"
     REPORTS = "reports"
     HELP = "help"
@@ -18,6 +19,16 @@ class UICallbackKind(StrEnum):
 
 
 class HabitAction(StrEnum):
+    LIST = "list"
+    NEW = "new"
+    DETAIL = "detail"
+    TOGGLE = "toggle"
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+
+
+class SportAction(StrEnum):
+    MENU = "menu"
     LIST = "list"
     NEW = "new"
     DETAIL = "detail"
@@ -52,6 +63,8 @@ class UICallback:
     bot_key: BotKey | None = None
     habit_action: HabitAction | None = None
     habit_id: int | None = None
+    sport_action: SportAction | None = None
+    sport_plan_id: int | None = None
     report_action: ReportAction | None = None
     settings_action: SettingsAction | None = None
 
@@ -77,6 +90,12 @@ def format_habit_ui(action: HabitAction, habit_id: int | None = None) -> str:
     if habit_id is None:
         return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}"
     return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}:{habit_id}"
+
+
+def format_sport_ui(action: SportAction, sport_plan_id: int | None = None) -> str:
+    if sport_plan_id is None:
+        return f"{UI_PREFIX}{UICallbackKind.SPORT.value}:{action.value}"
+    return f"{UI_PREFIX}{UICallbackKind.SPORT.value}:{action.value}:{sport_plan_id}"
 
 
 def format_report_ui(action: ReportAction) -> str:
@@ -127,6 +146,22 @@ def parse_ui(data: str) -> UICallback | None:
                 habit_id = int(parts[2])
             except ValueError:
                 return None
+    sport_action: SportAction | None = None
+    sport_plan_id: int | None = None
+    if kind is UICallbackKind.SPORT:
+        if len(parts) < 2:
+            return None
+        try:
+            sport_action = SportAction(parts[1])
+        except ValueError:
+            return None
+        if sport_action in (SportAction.DETAIL, SportAction.TOGGLE):
+            if len(parts) < 3:
+                return None
+            try:
+                sport_plan_id = int(parts[2])
+            except ValueError:
+                return None
     report_action: ReportAction | None = None
     if kind is UICallbackKind.REPORTS:
         if len(parts) >= 2:
@@ -146,6 +181,8 @@ def parse_ui(data: str) -> UICallback | None:
         bot_key=bot_key,
         habit_action=habit_action,
         habit_id=habit_id,
+        sport_action=sport_action,
+        sport_plan_id=sport_plan_id,
         report_action=report_action,
         settings_action=settings_action,
     )

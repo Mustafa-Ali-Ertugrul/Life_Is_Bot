@@ -46,6 +46,9 @@ HELP = (
     "/botlar - Botları yönet\n"
     "/rutin - Rutinlerini yönet\n"
     "/rutin_ekle - Yeni rutin ekle\n"
+    "/spor - Spor menüsünü aç\n"
+    "/spor_ekle - Yeni spor planı ekle\n"
+    "/spor_listesi - Spor planlarını listele\n"
     "/ayarlar - Ayarları göster\n"
     "/rapor - Raporları göster\n"
     "/yardim - Bu yardım menüsü"
@@ -145,6 +148,42 @@ HABIT_DAYS_TR: dict[int, str] = {
     7: "Paz",
 }
 
+SPORT_MENU = "Spor menüsü 🏋️\n\nNe yapmak istersin?"
+SPORT_LIST_HEADER = "Spor planların:\n\n{BOT_LIST}\n\nBir plan seç veya yenisini ekle:"
+SPORT_LIST_ITEM = "{status} {sport_type}"
+SPORT_LIST_ITEM_ACTIVE = "✅"
+SPORT_LIST_ITEM_INACTIVE = "⬜"
+SPORT_LIST_EMPTY = "Henüz spor planın yok. 🕐\n\n/spor_ekle ile ilk planını oluştur."
+SPORT_ASK_TYPE = (
+    "Spor türünü yaz.\n\nÖrnek: Fitness, Koşu, Yüzme, Yoga\n\n/iptal ile vazgeçebilirsin."
+)
+SPORT_ASK_DAYS = (
+    "Hangi günler yapacaksın? (gün adları veya sayılar)\n\n"
+    "Örn: Pazartesi, Çarşamba, Cuma ya da 1,3,5\n\n"
+    "Boş bırakırsan hafta içi sayılır.\n\n/iptal ile vazgeçebilirsin."
+)
+SPORT_ASK_TIME = (
+    "Hangi saatte hatırlatayım? (örn: 19:00, 19.00, 1900)\n\n/iptal ile vazgeçebilirsin."
+)
+SPORT_CONFIRM = "Plan eklensin mi?"
+SPORT_CREATED = "Spor planın eklendi. ✅"
+SPORT_CANCELLED = "Spor planı ekleme iptal edildi."
+SPORT_DETAIL = (
+    "Spor: {sport_type}\n\nSaat: {time}\nGünler: {days}\nDurum: {status}\n\nNe yapmak istersin?"
+)
+SPORT_STATUS_ACTIVE = "Aktif"
+SPORT_STATUS_INACTIVE = "Kapalı"
+SPORT_TOGGLED_ON = "Spor planı aktif edildi. ✅"
+SPORT_TOGGLED_OFF = "Spor planı kapatıldı."
+SPORT_INVALID_TYPE = "Spor türü boş olamaz. Tekrar yaz."
+SPORT_INVALID_TIME = "Saat formatı geçersiz. 19:00, 19.00 veya 1900 şeklinde yaz."
+SPORT_INVALID_DAYS = (
+    "Gün formatı geçersiz. Gün adı veya 1-7 arası sayı yaz (örn: 1,3,5).\n\n"
+    "Boş bırakırsan hafta içi sayılır."
+)
+SPORT_NOT_FOUND = "Spor planı bulunamadı."
+SPORT_DAYS_TR: dict[int, str] = HABIT_DAYS_TR
+
 BOT_KEYS_TR: dict[BotKey, str] = {
     BotKey.CORE: "Genel Rutin",
     BotKey.HABIT: "Rutin",
@@ -160,6 +199,9 @@ COMMANDS = [
     ("botlar", "Botları yönet"),
     ("rutin", "Rutinlerini yönet"),
     ("rutin_ekle", "Yeni rutin ekle"),
+    ("spor", "Spor menüsünü aç"),
+    ("spor_ekle", "Yeni spor planı ekle"),
+    ("spor_listesi", "Spor planlarını listele"),
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
     ("yardim", "Yardım menüsü"),

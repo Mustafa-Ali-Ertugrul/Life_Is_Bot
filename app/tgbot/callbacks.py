@@ -13,6 +13,7 @@ from app.tgbot.callback_parser import (
     HabitAction,
     ReminderAction,
     ReminderCallback,
+    SportAction,
     UICallback,
     UICallbackKind,
     parse,
@@ -38,6 +39,12 @@ from app.tgbot.messages import (
 )
 from app.tgbot.report_handlers import show_report
 from app.tgbot.settings_handlers import show_settings_menu
+from app.tgbot.sport_handlers import (
+    sport_detail_callback,
+    sport_list_callback,
+    sport_menu_callback,
+    sport_toggle_callback,
+)
 
 logger = get_logger("tgbot.callbacks")
 
@@ -102,6 +109,22 @@ async def _handle_ui_callback(
             return
         if parsed.habit_action is HabitAction.TOGGLE:
             await toggle_habit(update, context, parsed)
+            return
+        await query.answer("Geçersiz istek")
+        return
+
+    if parsed.kind is UICallbackKind.SPORT:
+        if parsed.sport_action is SportAction.MENU:
+            await sport_menu_callback(update, context, parsed)
+            return
+        if parsed.sport_action is SportAction.LIST:
+            await sport_list_callback(update, context, parsed)
+            return
+        if parsed.sport_action is SportAction.DETAIL:
+            await sport_detail_callback(update, context, parsed)
+            return
+        if parsed.sport_action is SportAction.TOGGLE:
+            await sport_toggle_callback(update, context, parsed)
             return
         await query.answer("Geçersiz istek")
         return
