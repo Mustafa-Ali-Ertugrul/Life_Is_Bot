@@ -14,6 +14,7 @@ from app.models.habit import Habit
 from app.models.notification_log import NotificationLog
 from app.models.reminder_event import ReminderEvent
 from app.models.sport_plan import SportPlan
+from app.models.supplement_plan import SupplementPlan
 from app.models.telegram_account import TelegramAccount
 from app.models.user import User
 from app.models.user_response import UserResponse
@@ -32,6 +33,7 @@ __all__ = [
     "ReminderStatus",
     "ResponseType",
     "SportPlan",
+    "SupplementPlan",
     "TelegramAccount",
     "TimestampMixin",
     "User",

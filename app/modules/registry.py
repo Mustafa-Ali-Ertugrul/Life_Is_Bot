@@ -4,6 +4,7 @@ from app.models import BotKey
 from app.modules.base import ReminderModule
 from app.modules.habit import HabitModule
 from app.modules.sport import SportModule
+from app.modules.supplement import SupplementModule
 
 _MODULES: list[ReminderModule] = []
 
@@ -36,6 +37,7 @@ def setup_default_modules() -> None:
     _MODULES.clear()
     register_module(HabitModule())
     register_module(SportModule())
+    register_module(SupplementModule())
 
 
 __all__ = [
