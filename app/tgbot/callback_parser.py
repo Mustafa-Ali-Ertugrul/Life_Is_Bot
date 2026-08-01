@@ -11,6 +11,7 @@ class UICallbackKind(StrEnum):
     BOT_TOGGLE = "toggle"
     HABIT = "habit"
     SPORT = "sport"
+    SUPPLEMENT = "supplement"
     SETTINGS = "settings"
     REPORTS = "reports"
     HELP = "help"
@@ -28,6 +29,16 @@ class HabitAction(StrEnum):
 
 
 class SportAction(StrEnum):
+    MENU = "menu"
+    LIST = "list"
+    NEW = "new"
+    DETAIL = "detail"
+    TOGGLE = "toggle"
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+
+
+class SupplementAction(StrEnum):
     MENU = "menu"
     LIST = "list"
     NEW = "new"
@@ -65,6 +76,8 @@ class UICallback:
     habit_id: int | None = None
     sport_action: SportAction | None = None
     sport_plan_id: int | None = None
+    supplement_action: SupplementAction | None = None
+    supplement_plan_id: int | None = None
     report_action: ReportAction | None = None
     settings_action: SettingsAction | None = None
 
@@ -96,6 +109,12 @@ def format_sport_ui(action: SportAction, sport_plan_id: int | None = None) -> st
     if sport_plan_id is None:
         return f"{UI_PREFIX}{UICallbackKind.SPORT.value}:{action.value}"
     return f"{UI_PREFIX}{UICallbackKind.SPORT.value}:{action.value}:{sport_plan_id}"
+
+
+def format_supplement_ui(action: SupplementAction, supplement_plan_id: int | None = None) -> str:
+    if supplement_plan_id is None:
+        return f"{UI_PREFIX}{UICallbackKind.SUPPLEMENT.value}:{action.value}"
+    return f"{UI_PREFIX}{UICallbackKind.SUPPLEMENT.value}:{action.value}:{supplement_plan_id}"
 
 
 def format_report_ui(action: ReportAction) -> str:
@@ -162,6 +181,22 @@ def parse_ui(data: str) -> UICallback | None:
                 sport_plan_id = int(parts[2])
             except ValueError:
                 return None
+    supplement_action: SupplementAction | None = None
+    supplement_plan_id: int | None = None
+    if kind is UICallbackKind.SUPPLEMENT:
+        if len(parts) < 2:
+            return None
+        try:
+            supplement_action = SupplementAction(parts[1])
+        except ValueError:
+            return None
+        if supplement_action in (SupplementAction.DETAIL, SupplementAction.TOGGLE):
+            if len(parts) < 3:
+                return None
+            try:
+                supplement_plan_id = int(parts[2])
+            except ValueError:
+                return None
     report_action: ReportAction | None = None
     if kind is UICallbackKind.REPORTS:
         if len(parts) >= 2:
@@ -183,6 +218,8 @@ def parse_ui(data: str) -> UICallback | None:
         habit_id=habit_id,
         sport_action=sport_action,
         sport_plan_id=sport_plan_id,
+        supplement_action=supplement_action,
+        supplement_plan_id=supplement_plan_id,
         report_action=report_action,
         settings_action=settings_action,
     )

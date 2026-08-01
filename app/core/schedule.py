@@ -35,14 +35,16 @@ def parse_days(days_of_week: str) -> set[int]:
 
 
 def parse_user_days(value: str) -> list[int]:
+    text = value.strip().lower().translate(_TRANSLIT)
+    if text in {"her gun", "hergun"}:
+        return [1, 2, 3, 4, 5, 6, 7]
     days: set[int] = set()
-    for part in re.split(r"[,/\s]+", value.strip()):
+    for part in re.split(r"[,/\s]+", text):
         if not part:
             continue
-        normalized = part.lower().translate(_TRANSLIT)
-        day = DAY_NAMES.get(normalized)
-        if day is None and normalized.isdigit():
-            parsed = int(normalized)
+        day = DAY_NAMES.get(part)
+        if day is None and part.isdigit():
+            parsed = int(part)
             if 1 <= parsed <= 7:
                 day = parsed
         if day is None:
