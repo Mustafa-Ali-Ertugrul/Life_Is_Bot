@@ -79,9 +79,17 @@ uv run pytest tests/ -v
 
 ## Yol Haritası
 
-- **Faz 1**: ✅ Hatırlatma motoru, Rutin botu — sonraki adım: FastAPI (mobil senkronizasyon), raporlar, ayarlar
-- **Faz 2**: Spor, Supplement botları
+- **Faz 1**: ✅ Hatırlatma motoru, Rutin botu
+- **Faz 1.5**: ✅ Data integrity (dedupe, check constraints, migration dizisi) + Quiet hours enforcement (notification policy, `SUPPRESSED` durumu, erteleme)
+- **Faz 2**: Spor, Supplement botları (öncesi: services audit, BotModule interface)
 - **Faz 3**: Adım, Sağlık değerlendirme, İlaç botları
+
+### Backlog
+
+- Notification retry (başarısız Telegram gönderimi, backoff)
+- DST/timezone geçiş testleri (quiet hours)
+- Aylık rapor
+- Notification channel abstraction (Telegram → mobil push)
 
 ## Lisans
 
