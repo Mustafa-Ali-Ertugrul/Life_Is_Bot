@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -62,8 +62,10 @@ async def find_or_create_by_telegram_id(
 
 
 async def count_active_users(session: AsyncSession) -> int:
-    result = await session.execute(select(User).where(User.is_active.is_(True)))
-    return len(result.scalars().all())
+    result = await session.execute(
+        select(func.count()).select_from(User).where(User.is_active.is_(True))
+    )
+    return result.scalar_one()
 
 
 async def grant_consent(session: AsyncSession, user_id: int) -> User:

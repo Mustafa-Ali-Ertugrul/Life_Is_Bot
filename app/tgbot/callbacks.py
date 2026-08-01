@@ -4,6 +4,8 @@ from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
 from app.core.database import async_session_factory
+from app.core.errors import InvalidStateError, NotFoundError, PermissionDeniedError
+from app.core.logger import get_logger
 from app.core.timezone import now_in
 from app.models import BotKey, ResponseType
 from app.services import preference_service, reminder_service, response_service, user_service
@@ -36,6 +38,8 @@ from app.tgbot.messages import (
 )
 from app.tgbot.report_handlers import show_report
 from app.tgbot.settings_handlers import show_settings_menu
+
+logger = get_logger("tgbot.callbacks")
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -152,30 +156,45 @@ async def _handle_reminder_callback(
             return
 
         bot_key = BotKey(event.bot_key)
-        if parsed.action is ReminderAction.DONE:
-            await response_service.save_response(
-                session, event.id, user_id, bot_key, ResponseType.DONE
+        try:
+            if parsed.action is ReminderAction.DONE:
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.DONE
+                )
+                await query.edit_message_text("Tamamlandı ✅")
+            elif parsed.action is ReminderAction.NOT_DONE:
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.NOT_DONE
+                )
+                await query.edit_message_text("Kaydedildi ❌")
+            elif parsed.action is ReminderAction.SKIP:
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.SKIPPED
+                )
+                await query.edit_message_text("Atlandı ⏭️")
+            elif parsed.action is ReminderAction.SNOOZE:
+                minutes = parsed.minutes or 10
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.SNOOZED
+                )
+                await reminder_service.reschedule_event(
+                    session, event.id, now_in() + timedelta(minutes=minutes)
+                )
+                await query.edit_message_text(f"{minutes} dk sonra tekrar hatırlatacağım ⏰")
+        except NotFoundError:
+            logger.warning("reminder callback rejected, event missing", event_id=event.id)
+            await query.answer("Hatırlatma bulunamadı", show_alert=True)
+            return
+        except PermissionDeniedError:
+            logger.warning(
+                "reminder callback rejected, permission denied", user_id=user_id, event_id=event.id
             )
-            await query.edit_message_text("Tamamlandı ✅")
-        elif parsed.action is ReminderAction.NOT_DONE:
-            await response_service.save_response(
-                session, event.id, user_id, bot_key, ResponseType.NOT_DONE
-            )
-            await query.edit_message_text("Kaydedildi ❌")
-        elif parsed.action is ReminderAction.SKIP:
-            await response_service.save_response(
-                session, event.id, user_id, bot_key, ResponseType.SKIPPED
-            )
-            await query.edit_message_text("Atlandı ⏭️")
-        elif parsed.action is ReminderAction.SNOOZE:
-            minutes = parsed.minutes or 10
-            await response_service.save_response(
-                session, event.id, user_id, bot_key, ResponseType.SNOOZED
-            )
-            await reminder_service.reschedule_event(
-                session, event.id, now_in() + timedelta(minutes=minutes)
-            )
-            await query.edit_message_text(f"{minutes} dk sonra tekrar hatırlatacağım ⏰")
+            await query.answer("Bu işlem için yetkiniz yok", show_alert=True)
+            return
+        except InvalidStateError:
+            logger.warning("reminder callback rejected, invalid state", event_id=event.id)
+            await query.answer("Bu hatırlatma artık yanıtlanamaz", show_alert=True)
+            return
 
     await query.answer()
 

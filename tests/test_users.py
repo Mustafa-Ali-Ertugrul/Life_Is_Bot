@@ -40,3 +40,15 @@ async def test_count_active_users(db_session: AsyncSession) -> None:
     count = await user_service.count_active_users(db_session)
 
     assert count == 1
+
+
+async def test_count_active_users_excludes_inactive(db_session: AsyncSession) -> None:
+    await user_service.find_or_create_by_telegram_id(db_session, TELEGRAM_USER_ID)
+    user = await user_service.find_user_by_telegram_id(db_session, TELEGRAM_USER_ID)
+    assert user is not None
+    user.is_active = False
+    await db_session.commit()
+
+    count = await user_service.count_active_users(db_session)
+
+    assert count == 0

@@ -1,6 +1,7 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import InvalidStateError, NotFoundError, PermissionDeniedError
 from app.core.timezone import now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus, ResponseType, UserResponse
 
@@ -14,6 +15,14 @@ async def save_response(
     reason: str | None = None,
     source: str = "telegram_inline",
 ) -> UserResponse:
+    event = await session.get(ReminderEvent, reminder_event_id)
+    if event is None:
+        raise NotFoundError(f"Reminder event bulunamadı: {reminder_event_id}")
+    if event.user_id != user_id:
+        raise PermissionDeniedError("Bu event size ait değil")
+    if event.status in (ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value):
+        raise InvalidStateError("Bu event yanıtlanamaz durumda")
+
     await session.execute(
         update(UserResponse)
         .where(

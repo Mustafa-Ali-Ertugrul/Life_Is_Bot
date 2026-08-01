@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.models import Base
 
 TELEGRAM_USER_ID = "123456789"
+TELEGRAM_USER_ID_2 = "987654321"
 
 
 @pytest_asyncio.fixture
