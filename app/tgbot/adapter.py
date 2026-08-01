@@ -9,6 +9,7 @@ from telegram.ext import (
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.modules.registry import setup_default_modules
 from app.scheduler.engine import set_bot
 from app.scheduler.setup import setup_scheduler
 from app.tgbot.callbacks import handle_callback
@@ -26,6 +27,7 @@ ApplicationT = Application[Any, Any, Any, Any, Any, Any]
 
 async def _post_init(application: ApplicationT) -> None:
     set_bot(application.bot)
+    setup_default_modules()
     setup_scheduler()
     await application.bot.set_my_commands(COMMANDS)
     logger.info("telegram application initialized")
