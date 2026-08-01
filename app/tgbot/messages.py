@@ -2,7 +2,7 @@ from app.models import BotKey
 
 WELCOME = (
     "Merhaba 👋\n\n"
-    "Ben RutinBot.\n\n"
+    "Ben Life Is Bot.\n\n"
     "Günlük rutinlerini, sporunu, supplementlerini, adım sayını ve ilaç "
     "takibini yönetmene yardımcı olabilirim.\n\n"
     "Ne yapmak istersin?"
@@ -19,7 +19,7 @@ CONSENT_TEXT = (
 
 CONSENT_GRANTED = "Onayın alındı, teşekkürler! ✅"
 CONSENT_DENIED = (
-    "Onay verilmediği için RutinBot kullanılamıyor. "
+    "Onay verilmediği için Life Is Bot kullanılamıyor. "
     "İstediğin zaman /start ile tekrar deneyebilirsin."
 )
 
@@ -41,7 +41,7 @@ BOT_ACTIVATED = "{name} Botu açıldı. ✅"
 BOT_DEACTIVATED = "{name} Botu kapatıldı."
 
 HELP = (
-    "RutinBot yardım 📖\n\n"
+    "Life Is Bot yardım 📖\n\n"
     "/start - Ana menüyü aç\n"
     "/botlar - Botları yönet\n"
     "/rutin - Rutinlerini yönet\n"

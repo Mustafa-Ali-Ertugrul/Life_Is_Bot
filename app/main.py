@@ -17,14 +17,14 @@ def main() -> None:
 
     application = build_application()
     try:
-        logger.info("rutinbot starting", mode="polling", timezone=settings.timezone)
+        logger.info("life_is_bot starting", mode="polling", timezone=settings.timezone)
         application.run_polling(allowed_updates=["message", "callback_query"])
     except Exception:
-        logger.exception("rutinbot fatal error")
+        logger.exception("life_is_bot fatal error")
         raise
     finally:
         stop_scheduler()
-        logger.info("rutinbot stopped")
+        logger.info("life_is_bot stopped")
 
 
 if __name__ == "__main__":

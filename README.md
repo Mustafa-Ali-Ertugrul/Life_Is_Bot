@@ -1,4 +1,4 @@
-# RutinBot
+# Life Is Bot
 
 Telegram tabanlı sağlık ve rutin takip botu. Günlük rutinler, spor, supplement, adım sayısı, sağlık değerlendirmesi ve ilaç takibi için modüler bir altyapı.
 
