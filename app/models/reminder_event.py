@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -26,13 +26,13 @@ class ReminderEvent(Base):
     related_type: Mapped[str | None] = mapped_column(String(64))
     related_id: Mapped[int | None] = mapped_column(Integer)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    scheduled_local_date: Mapped[date] = mapped_column(
-        Date, nullable=False, server_default="1970-01-01"
-    )
-    dedupe_key: Mapped[str] = mapped_column(String(190), nullable=False, server_default="legacy")
+    scheduled_local_date: Mapped[date] = mapped_column(Date, nullable=False)
+    dedupe_key: Mapped[str] = mapped_column(String(190), nullable=False)
     notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(32), default="scheduled")
     interpretation_json: Mapped[str] = mapped_column(Text, default="{}")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     user: Mapped["User"] = relationship(back_populates="reminder_events")

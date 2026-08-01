@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -15,6 +15,19 @@ if TYPE_CHECKING:
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("week_start_day BETWEEN 1 AND 7", name="ck_users_week_start_day_range"),
+        CheckConstraint(
+            "quiet_hours_start IS NULL OR "
+            "(length(quiet_hours_start) = 5 AND substr(quiet_hours_start, 3, 1) = ':')",
+            name="ck_users_quiet_hours_start_format",
+        ),
+        CheckConstraint(
+            "quiet_hours_end IS NULL OR "
+            "(length(quiet_hours_end) = 5 AND substr(quiet_hours_end, 3, 1) = ':')",
+            name="ck_users_quiet_hours_end_format",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String(255))
