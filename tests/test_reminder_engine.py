@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import now_in
-from app.models import BotKey, ReminderEvent, ResponseType
+from app.models import BotKey, ReminderEvent, ReminderStatus, ResponseType
 from app.services import preference_service, reminder_service, response_service, user_service
 from tests.conftest import TELEGRAM_USER_ID
 
@@ -138,7 +138,7 @@ async def test_should_skip_notify_after_response(db_session: AsyncSession) -> No
     assert skip is True
 
 
-async def test_snooze_creates_new_event(db_session: AsyncSession) -> None:
+async def test_snooze_reschedules_same_event(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     event = await _event(db_session, user_id, bot_key=BotKey.MEDICATION, related_type="medication")
     now = now_in()
@@ -146,15 +146,13 @@ async def test_snooze_creates_new_event(db_session: AsyncSession) -> None:
     await response_service.save_response(
         db_session, event.id, user_id, BotKey.MEDICATION, ResponseType.SNOOZED
     )
-    new_event = await reminder_service.create_event(
-        db_session,
-        user_id=user_id,
-        bot_key=BotKey.MEDICATION,
-        scheduled_at=now + timedelta(minutes=10),
-        related_type="medication",
-        related_id=1,
+    updated = await reminder_service.reschedule_event(
+        db_session, event.id, now + timedelta(minutes=10)
     )
 
-    assert new_event.id != event.id
-    scheduled = new_event.scheduled_at.replace(tzinfo=now.tzinfo)
+    assert updated is not None
+    assert updated.id == event.id
+    scheduled = updated.scheduled_at.replace(tzinfo=now.tzinfo)
     assert scheduled >= now + timedelta(minutes=9)
+    assert updated.status == ReminderStatus.SCHEDULED.value
+    assert updated.notified_at is None

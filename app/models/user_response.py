@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -11,6 +11,13 @@ class UserResponse(Base):
     __table_args__ = (
         Index("ix_user_responses_event_current", "reminder_event_id", "is_current"),
         Index("ix_user_responses_user_bot", "user_id", "bot_key"),
+        Index(
+            "uq_user_responses_current_per_event",
+            "reminder_event_id",
+            unique=True,
+            sqlite_where=text("is_current = 1"),
+            postgresql_where=text("is_current = true"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

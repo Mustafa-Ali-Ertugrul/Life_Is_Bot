@@ -1,13 +1,24 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.timezone import now_in
+from app.core.config import settings
+from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus, User, UserResponse
 
-_WINDOW_DAYS = 1
+
+def build_reminder_dedupe_key(
+    bot_key: str,
+    related_type: str | None,
+    related_id: int | None,
+    scheduled_local_date: date,
+) -> str:
+    return (
+        f"{bot_key}:{related_type or 'none'}:{related_id or 0}:{scheduled_local_date.isoformat()}"
+    )
 
 
 async def create_event(
@@ -19,12 +30,16 @@ async def create_event(
     related_id: int | None = None,
     interpretation_json: str = "{}",
 ) -> ReminderEvent:
-    if related_type is not None and related_id is not None:
-        existing = await _find_existing_event(
-            session, user_id, related_type, related_id, scheduled_at
-        )
-        if existing is not None:
-            return existing
+    scheduled_local_date = await _scheduled_local_date(session, user_id, scheduled_at)
+    dedupe_key = build_reminder_dedupe_key(
+        bot_key.value, related_type, related_id, scheduled_local_date
+    )
+
+    existing = await _find_by_dedupe(session, user_id, dedupe_key)
+    if existing is not None:
+        if existing.status == ReminderStatus.CANCELLED.value:
+            return await _reactivate(session, existing, scheduled_at)
+        return existing
 
     event = ReminderEvent(
         user_id=user_id,
@@ -32,38 +47,81 @@ async def create_event(
         related_type=related_type,
         related_id=related_id,
         scheduled_at=scheduled_at,
+        scheduled_local_date=scheduled_local_date,
+        dedupe_key=dedupe_key,
         status=ReminderStatus.SCHEDULED.value,
         interpretation_json=interpretation_json,
         created_at=now_in(),
     )
     session.add(event)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        existing = await _find_by_dedupe(session, user_id, dedupe_key)
+        if existing is not None:
+            if existing.status == ReminderStatus.CANCELLED.value:
+                return await _reactivate(session, existing, scheduled_at)
+            return existing
+        raise
+    await session.refresh(event)
+    return event
+
+
+async def reschedule_event(
+    session: AsyncSession, event_id: int, new_scheduled_at: datetime
+) -> ReminderEvent | None:
+    event = await session.get(ReminderEvent, event_id)
+    if event is None:
+        return None
+    try:
+        return await _reactivate(session, event, new_scheduled_at)
+    except IntegrityError:
+        await session.rollback()
+        return None
+
+
+async def _reactivate(
+    session: AsyncSession, event: ReminderEvent, scheduled_at: datetime
+) -> ReminderEvent:
+    scheduled_local_date = await _scheduled_local_date(session, event.user_id, scheduled_at)
+    event.scheduled_at = scheduled_at
+    event.scheduled_local_date = scheduled_local_date
+    event.dedupe_key = build_reminder_dedupe_key(
+        event.bot_key, event.related_type, event.related_id, scheduled_local_date
+    )
+    event.status = ReminderStatus.SCHEDULED.value
+    event.notified_at = None
     await session.commit()
     await session.refresh(event)
     return event
 
 
-async def _find_existing_event(
-    session: AsyncSession,
-    user_id: int,
-    related_type: str,
-    related_id: int,
-    scheduled_at: datetime,
+async def _find_by_dedupe(
+    session: AsyncSession, user_id: int, dedupe_key: str
 ) -> ReminderEvent | None:
-    start = scheduled_at.replace(hour=0, minute=0, second=0, microsecond=0)
-    end = start + timedelta(days=_WINDOW_DAYS)
     result = await session.execute(
         select(ReminderEvent).where(
             ReminderEvent.user_id == user_id,
-            ReminderEvent.related_type == related_type,
-            ReminderEvent.related_id == related_id,
-            ReminderEvent.scheduled_at >= start,
-            ReminderEvent.scheduled_at < end,
-            ReminderEvent.status.in_(
-                [ReminderStatus.SCHEDULED.value, ReminderStatus.NOTIFIED.value]
-            ),
+            ReminderEvent.dedupe_key == dedupe_key,
         )
     )
     return result.scalars().first()
+
+
+async def _scheduled_local_date(
+    session: AsyncSession, user_id: int, scheduled_at: datetime
+) -> date:
+    local = scheduled_at
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=get_user_timezone(settings.timezone))
+    tz_name = await _user_timezone_name(session, user_id)
+    return local.astimezone(get_user_timezone(tz_name)).date()
+
+
+async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
+    result = await session.execute(select(User.timezone).where(User.id == user_id))
+    return result.scalar_one_or_none() or settings.timezone
 
 
 async def get_event(session: AsyncSession, event_id: int) -> ReminderEvent | None:
@@ -139,9 +197,11 @@ __all__ = [
     "ReminderEvent",
     "ReminderStatus",
     "User",
+    "build_reminder_dedupe_key",
     "create_event",
     "find_due_events",
     "get_event",
     "mark_notified",
+    "reschedule_event",
     "should_skip_notify",
 ]
