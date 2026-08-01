@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -23,6 +23,11 @@ class User(Base, TimestampMixin):
     consent_given: Mapped[bool] = mapped_column(Boolean, default=False)
     consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    quiet_hours_start: Mapped[str | None] = mapped_column(String(5))
+    quiet_hours_end: Mapped[str | None] = mapped_column(String(5))
+    week_start_day: Mapped[int] = mapped_column(Integer, default=1)
 
     telegram_account: Mapped["TelegramAccount | None"] = relationship(
         back_populates="user", uselist=False

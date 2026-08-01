@@ -51,7 +51,37 @@ HELP = (
     "/yardim - Bu yardım menüsü"
 )
 
-SETTINGS_STUB = "Ayarlar menüsü Faz 1'de gelecek. ⏳"
+SETTINGS_HEADER = (
+    "Ayarlar ⚙️\n\n"
+    "Timezone: {timezone}\n"
+    "Bildirimler: {notifications}\n"
+    "Sessiz saatler: {quiet_hours}\n"
+    "Dil: Türkçe"
+)
+SETTINGS_NOTIFICATIONS_ON = "Açık"
+SETTINGS_NOTIFICATIONS_OFF = "Kapalı"
+SETTINGS_QUIET_HOURS_NONE = "Kapalı"
+SETTINGS_QUIET_HOURS_RANGE = "{start} - {end}"
+SETTINGS_ASK_TIMEZONE = (
+    "Yeni timezone'u IANA adıyla yaz (örn: Europe/Istanbul).\n\n"
+    "/iptal ile vazgeçebilirsin."
+)
+SETTINGS_INVALID_TIMEZONE = "Geçersiz timezone. IANA adı kullan (örn: Europe/Istanbul)."
+SETTINGS_TIMEZONE_UPDATED = "Timezone güncellendi: {timezone} ✅"
+SETTINGS_ASK_QUIET_START = (
+    "Sessiz saatlerin başlangıcı (HH:MM, örn: 23:00)?\n\n"
+    "/iptal ile vazgeçebilirsin."
+)
+SETTINGS_ASK_QUIET_END = (
+    "Sessiz saatlerin bitişi (HH:MM, örn: 07:00)?\n\n"
+    "/iptal ile vazgeçebilirsin."
+)
+SETTINGS_INVALID_TIME = "Saat formatı geçersiz. HH:MM şeklinde yaz (örn: 23:00)."
+SETTINGS_QUIET_HOURS_UPDATED = "Sessiz saatler ayarlandı: {start} - {end} 🌙"
+SETTINGS_QUIET_HOURS_OFF = "Sessiz saatler kapatıldı."
+SETTINGS_NOTIFICATIONS_ON_MSG = "Bildirimler açıldı. ✅"
+SETTINGS_NOTIFICATIONS_OFF_MSG = "Bildirimler kapatıldı."
+SETTINGS_CANCELLED = "Ayarlar iptal edildi."
 
 REPORT_DAILY_TITLE = "Bugünkü özet 📊"
 REPORT_WEEKLY_TITLE = "Bu hafta 📈"
