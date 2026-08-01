@@ -172,14 +172,8 @@ async def _handle_reminder_callback(
             await response_service.save_response(
                 session, event.id, user_id, bot_key, ResponseType.SNOOZED
             )
-            await reminder_service.create_event(
-                session,
-                user_id=user_id,
-                bot_key=bot_key,
-                scheduled_at=now_in() + timedelta(minutes=minutes),
-                related_type=event.related_type,
-                related_id=event.related_id,
-                interpretation_json=event.interpretation_json,
+            await reminder_service.reschedule_event(
+                session, event.id, now_in() + timedelta(minutes=minutes)
             )
             await query.edit_message_text(f"{minutes} dk sonra tekrar hatırlatacağım ⏰")
 
