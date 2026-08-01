@@ -58,7 +58,7 @@ async def create_event(
         dedupe_key=dedupe_key,
         status=ReminderStatus.SCHEDULED.value,
         interpretation_json=interpretation_json,
-        created_at=now_in(),
+        created_at=now_in("UTC"),
     )
     session.add(event)
     try:
@@ -168,7 +168,7 @@ async def mark_notified(session: AsyncSession, event_id: int) -> bool:
             ReminderEvent.id == event_id,
             ReminderEvent.status == ReminderStatus.SCHEDULED.value,
         )
-        .values(status=ReminderStatus.NOTIFIED.value, notified_at=now_in())
+        .values(status=ReminderStatus.NOTIFIED.value, notified_at=now_in("UTC"))
     )
     await session.commit()
     rowcount = result.rowcount  # type: ignore[attr-defined]

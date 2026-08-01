@@ -55,7 +55,7 @@ async def toggle_preference(
 
     preference = await get_or_create_preference(session, user_id, bot_key)
     preference.enabled = enabled
-    preference.updated_at = now_in()
+    preference.updated_at = now_in("UTC")
     await session.commit()
     await session.refresh(preference)
     return preference

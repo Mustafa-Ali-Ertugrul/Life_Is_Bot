@@ -39,7 +39,7 @@ async def save_response(
         response=response.value,
         reason=reason,
         source=source,
-        responded_at=now_in(),
+        responded_at=now_in("UTC"),
         is_current=True,
     )
     session.add(new_response)
