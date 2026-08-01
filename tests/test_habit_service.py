@@ -149,7 +149,7 @@ async def test_completion_stats_counts_positive_status(db_session: AsyncSession)
 
 
 async def test_habit_reminder_uses_habit_label() -> None:
-    from app.tgbot.notifier import _event_label
+    from app.services.event_labels import event_label
 
     event = ReminderEvent(
         user_id=1,
@@ -162,4 +162,4 @@ async def test_habit_reminder_uses_habit_label() -> None:
         created_at=datetime(2026, 8, 1, 0, 0),
     )
 
-    assert _event_label(event) == "Sabah sporu"
+    assert event_label(event) == "Sabah sporu"

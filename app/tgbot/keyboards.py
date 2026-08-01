@@ -1,7 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.models import BotPreference, Habit
-from app.tgbot.callback_parser import HabitAction, UICallbackKind, format_habit_ui, format_ui
+from app.tgbot.callback_parser import (
+    HabitAction,
+    ReportAction,
+    UICallbackKind,
+    format_habit_ui,
+    format_report_ui,
+    format_ui,
+)
 from app.tgbot.messages import BOT_KEYS_TR
 
 
@@ -112,5 +119,18 @@ def habit_confirm() -> InlineKeyboardMarkup:
             InlineKeyboardButton("Onayla ✅", callback_data=format_habit_ui(HabitAction.CONFIRM)),
             InlineKeyboardButton("Vazgeç ❌", callback_data=format_habit_ui(HabitAction.CANCEL)),
         ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def report_menu() -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton("📅 Bugün", callback_data=format_report_ui(ReportAction.DAILY)),
+            InlineKeyboardButton(
+                "📈 Haftalık", callback_data=format_report_ui(ReportAction.WEEKLY)
+            ),
+        ],
+        [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))],
     ]
     return InlineKeyboardMarkup(keyboard)

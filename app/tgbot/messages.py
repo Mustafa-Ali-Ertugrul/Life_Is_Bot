@@ -52,7 +52,33 @@ HELP = (
 )
 
 SETTINGS_STUB = "Ayarlar menüsü Faz 1'de gelecek. ⏳"
-REPORT_STUB = "Raporlar menüsü Faz 1'de gelecek. ⏳"
+
+REPORT_DAILY_TITLE = "Bugünkü özet 📊"
+REPORT_WEEKLY_TITLE = "Bu hafta 📈"
+REPORT_SUMMARY_LINES = (
+    "Toplam rutin: {total}\n"
+    "Tamamlanan: {completed}\n"
+    "Kaçırılan: {missed}\n"
+    "Yanıt verilmeyen: {unanswered}"
+)
+REPORT_COMPLETED_HEADER = "Tamamlananlar:"
+REPORT_MISSED_HEADER = "Kaçırılanlar:"
+REPORT_ITEM_COMPLETED = "✅ {label}"
+REPORT_ITEM_MISSED = "❌ {label}"
+REPORT_EMPTY = "Bu dönemde kayıtlı hatırlatma yok. 🕐"
+REPORT_COMPLIANCE = "Uyum oranı: %{rate}"
+REPORT_BEST_DAY = "En iyi gün: {day}"
+REPORT_WEAKEST_DAY = "En zayıf gün: {day}"
+
+WEEKDAY_NAMES_TR: dict[int, str] = {
+    1: "Pazartesi",
+    2: "Salı",
+    3: "Çarşamba",
+    4: "Perşembe",
+    5: "Cuma",
+    6: "Cumartesi",
+    7: "Pazar",
+}
 
 HABIT_LIST_HEADER = "Rutinlerin:\n\n{BOT_LIST}\n\nBir rutin seç veya yenisini ekle:"
 HABIT_LIST_ITEM = "{status} {name}"
