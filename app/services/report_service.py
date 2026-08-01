@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import TypedDict
 from zoneinfo import ZoneInfo
 
@@ -151,7 +151,7 @@ async def _events_for_local_date_range(
 
 def _as_local(value: datetime, tz: ZoneInfo) -> datetime:
     if value.tzinfo is None:
-        value = value.replace(tzinfo=get_user_timezone(settings.timezone))
+        value = value.replace(tzinfo=UTC)
     return value.astimezone(tz)
 
 

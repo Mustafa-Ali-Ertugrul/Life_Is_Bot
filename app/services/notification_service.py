@@ -18,7 +18,7 @@ async def log_notification(
         channel=channel,
         message=message,
         status=status,
-        sent_at=now_in(),
+        sent_at=now_in("UTC"),
     )
     session.add(log)
     await session.commit()

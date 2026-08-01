@@ -122,9 +122,9 @@ async def generate_today_events_for_all(session: AsyncSession) -> int:
 
 
 async def get_completion_stats(
-    session: AsyncSession, user_id: int, days: int = 7
+    session: AsyncSession, user_id: int, days: int = 7, now: datetime | None = None
 ) -> dict[str, int]:
-    since = now_in() - timedelta(days=days)
+    since = (now if now is not None else now_in("UTC")) - timedelta(days=days)
     result = await session.execute(
         select(ReminderEvent).where(
             ReminderEvent.user_id == user_id,

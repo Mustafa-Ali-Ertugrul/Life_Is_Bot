@@ -40,7 +40,7 @@ async def find_or_create_by_telegram_id(
                     await session.commit()
         return user
 
-    now: datetime = now_in()
+    now: datetime = now_in("UTC")
     user = User(name=first_name, consent_given=False, is_active=True)
     session.add(user)
     await session.flush()
@@ -74,6 +74,6 @@ async def grant_consent(session: AsyncSession, user_id: int) -> User:
         raise ValueError(f"Kullanıcı bulunamadı: {user_id}")
     if not user.consent_given:
         user.consent_given = True
-        user.consented_at = now_in()
+        user.consented_at = now_in("UTC")
         await session.commit()
     return user

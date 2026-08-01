@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import get_user_timezone
 from app.models import BotKey
-from app.services import reminder_service
+from app.services import habit_service, reminder_service
 
 HABIT_UTC_NAIVE = "2026-08-01 06:00:00.000000"  # 09:00 Europe/Istanbul instant
 
@@ -36,16 +36,17 @@ async def _seed_pending(
     *,
     stored_at: str,
     status: str = "scheduled",
+    related_type: str = "habit",
 ) -> None:
     await db_session.execute(
         text(
             "INSERT INTO reminder_events "
-            "(user_id, bot_key, scheduled_at, status, interpretation_json, created_at, "
-            "scheduled_local_date, dedupe_key) "
-            "VALUES (:u, 'habit_bot', :at, :status, '{}', :at, '2026-08-01', "
+            "(user_id, bot_key, related_type, scheduled_at, status, interpretation_json, "
+            "created_at, scheduled_local_date, dedupe_key) "
+            "VALUES (:u, 'habit_bot', :rt, :at, :status, '{}', :at, '2026-08-01', "
             "'habit_bot:none:0:2026-08-01')"
         ),
-        {"u": user_id, "at": stored_at, "status": status},
+        {"u": user_id, "at": stored_at, "status": status, "rt": related_type},
     )
     await db_session.commit()
 
@@ -180,3 +181,63 @@ async def test_reschedule_keeps_utc_wall_clock(db_session: AsyncSession) -> None
 
     assert updated is not None
     assert updated.scheduled_at == datetime(2026, 8, 1, 9, 10)
+
+
+async def test_created_at_stored_utc_wall_clock(db_session: AsyncSession) -> None:
+    """Regression: marker timestamps must be UTC wall-clock, not Istanbul."""
+    await _user(db_session)
+    event = await reminder_service.create_event(
+        db_session,
+        user_id=1,
+        bot_key=BotKey.HABIT,
+        scheduled_at=datetime(2026, 8, 2, 6, 0, tzinfo=UTC),
+    )
+
+    assert event.created_at.tzinfo is None
+    expected = datetime.now(UTC).replace(tzinfo=None)
+    assert abs((event.created_at - expected).total_seconds()) < 60
+
+
+async def test_notified_at_stored_utc_wall_clock(db_session: AsyncSession) -> None:
+    """Regression: mark_notified writes a UTC wall-clock marker."""
+    await _user(db_session)
+    event = await reminder_service.create_event(
+        db_session,
+        user_id=1,
+        bot_key=BotKey.HABIT,
+        scheduled_at=datetime(2026, 8, 2, 6, 0, tzinfo=UTC),
+    )
+
+    assert await reminder_service.mark_notified(db_session, event.id)
+
+    row = (
+        await db_session.execute(
+            text("SELECT notified_at FROM reminder_events WHERE id = :id"),
+            {"id": event.id},
+        )
+    ).scalar_one()
+    assert not row.endswith(("+", "Z"))
+    stored = datetime.fromisoformat(row)
+    expected = datetime.now(UTC).replace(tzinfo=None)
+    assert abs((stored - expected).total_seconds()) < 60
+
+
+async def test_completion_stats_window_uses_utc_not_local(db_session: AsyncSession) -> None:
+    """Regression: the stats window must not shift by the user-tz offset.
+
+    A positive event 22.5h in the past lies inside a UTC one-day window but
+    outside an Istanbul-shifted one (UTC since + 3h), catching the old
+    `now_in()` (Istanbul) boundary drift.
+    """
+    await _user(db_session)
+    now = datetime(2026, 8, 1, 12, 0, tzinfo=UTC)
+    await _seed_pending(
+        db_session,
+        1,
+        stored_at=(now - timedelta(hours=22, minutes=30)).replace(tzinfo=None).isoformat(sep=" "),
+        status="positive",
+    )
+
+    stats = await habit_service.get_completion_stats(db_session, 1, days=1, now=now)
+
+    assert stats == {"total": 1, "completed": 1}
