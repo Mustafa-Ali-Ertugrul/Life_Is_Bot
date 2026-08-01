@@ -240,6 +240,8 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             return ASK_DAYS
         days_of_week = ",".join(str(d) for d in sorted(days))
 
+    context.user_data["habit_days"] = days_of_week  # type: ignore[index]
+
     name = str(_get_habit_data(context).get("habit_name", ""))
     hour = int(_get_habit_data(context).get("habit_hour", 0))
     minute = int(_get_habit_data(context).get("habit_minute", 0))

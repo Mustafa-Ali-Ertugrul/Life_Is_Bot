@@ -1,14 +1,16 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.models import BotPreference, Habit, User
+from app.models import BotPreference, Habit, SportPlan, User
 from app.tgbot.callback_parser import (
     HabitAction,
     ReportAction,
     SettingsAction,
+    SportAction,
     UICallbackKind,
     format_habit_ui,
     format_report_ui,
     format_settings_ui,
+    format_sport_ui,
     format_ui,
 )
 from app.tgbot.messages import BOT_KEYS_TR
@@ -120,6 +122,60 @@ def habit_confirm() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("Onayla ✅", callback_data=format_habit_ui(HabitAction.CONFIRM)),
             InlineKeyboardButton("Vazgeç ❌", callback_data=format_habit_ui(HabitAction.CANCEL)),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def sport_menu() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("📋 Planlarım", callback_data=format_sport_ui(SportAction.LIST))],
+        [InlineKeyboardButton("➕ Yeni Plan Ekle", callback_data=format_sport_ui(SportAction.NEW))],
+        [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def sport_plan_list(plans: list[SportPlan]) -> InlineKeyboardMarkup:
+    keyboard: list[list[InlineKeyboardButton]] = []
+    for plan in plans:
+        label = plan.sport_type
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    label,
+                    callback_data=format_sport_ui(SportAction.DETAIL, plan.id),
+                )
+            ]
+        )
+    keyboard.append(
+        [InlineKeyboardButton("➕ Yeni Plan Ekle", callback_data=format_sport_ui(SportAction.NEW))]
+    )
+    keyboard.append(
+        [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))]
+    )
+    return InlineKeyboardMarkup(keyboard)
+
+
+def sport_plan_detail(plan: SportPlan) -> InlineKeyboardMarkup:
+    toggle_label = "Planı Kapat" if plan.is_active else "Planı Aç"
+    keyboard: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton(
+                toggle_label,
+                callback_data=format_sport_ui(SportAction.TOGGLE, plan.id),
+            )
+        ],
+        [InlineKeyboardButton("◀️ Geri", callback_data=format_sport_ui(SportAction.LIST))],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def sport_confirm() -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton("Onayla ✅", callback_data=format_sport_ui(SportAction.CONFIRM)),
+            InlineKeyboardButton("Vazgeç ❌", callback_data=format_sport_ui(SportAction.CANCEL)),
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
