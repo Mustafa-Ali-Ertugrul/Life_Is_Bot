@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -299,3 +299,56 @@ async def test_weekly_report_excludes_suppressed(db_session: AsyncSession) -> No
 
     assert data["total"] == 0
     assert data["unanswered"] == 0
+
+
+async def test_daily_report_uses_local_date_not_scheduled_at(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    db_session.add(
+        ReminderEvent(
+            user_id=user_id,
+            bot_key=BotKey.HABIT.value,
+            related_type="habit",
+            related_id=1,
+            scheduled_at=datetime(2026, 8, 2, 2, 30, tzinfo=timezone.utc),
+            scheduled_local_date=date(2026, 8, 1),
+            dedupe_key="report-local-date-test",
+            status=ReminderStatus.POSITIVE.value,
+            interpretation_json='{"habit_name": "Su iç"}',
+            created_at=datetime(2026, 8, 1, 0, 0, tzinfo=timezone.utc),
+        )
+    )
+    await db_session.commit()
+
+    data = await report_service.generate_daily_report(db_session, user_id, day=date(2026, 8, 1))
+
+    assert data["total"] == 1
+    assert data["completed"] == 1
+    assert data["completed_items"] == ["Su iç"]
+
+
+async def test_weekly_report_uses_local_date_range(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    week_start = date(2026, 8, 3)
+    db_session.add(
+        ReminderEvent(
+            user_id=user_id,
+            bot_key=BotKey.HABIT.value,
+            related_type="habit",
+            related_id=1,
+            scheduled_at=datetime(2026, 8, 10, 2, 30, tzinfo=timezone.utc),
+            scheduled_local_date=date(2026, 8, 4),
+            dedupe_key="report-weekly-local-date-test",
+            status=ReminderStatus.POSITIVE.value,
+            interpretation_json="{}",
+            created_at=datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc),
+        )
+    )
+    await db_session.commit()
+
+    data = await report_service.generate_weekly_report(
+        db_session, user_id, week_start=week_start
+    )
+
+    assert data["total"] == 1
+    assert data["completed"] == 1
+    assert data["week_start"] == week_start.isoformat()

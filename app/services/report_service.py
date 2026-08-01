@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 from typing import TypedDict
 from zoneinfo import ZoneInfo
 
@@ -9,8 +9,6 @@ from app.core.config import settings
 from app.core.timezone import get_user_timezone, now_in
 from app.models import ReminderEvent, ReminderStatus, User
 from app.services.event_labels import event_label
-
-_WINDOW_MARGIN_DAYS = 2
 
 
 class DailyReport(TypedDict):
@@ -42,19 +40,12 @@ async def generate_daily_report(
 ) -> DailyReport:
     tz = get_user_timezone(await _user_timezone_name(session, user_id))
     day = day or _as_local(now_in(), tz).date()
-    start_local = datetime.combine(day, time.min, tzinfo=tz)
-    end_local = start_local + timedelta(days=1)
 
     completed: list[str] = []
     missed: list[str] = []
     unanswered = 0
-    for event in await _events_in_range(session, user_id, start_local, end_local):
-        local_date = _as_local(event.scheduled_at, tz).date()
-        if local_date != day:
-            continue
+    for event in await _events_for_local_date(session, user_id, day):
         status = event.status
-        if status in (ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value):
-            continue
         if status == ReminderStatus.POSITIVE.value:
             completed.append(event_label(event))
         elif status == ReminderStatus.NEGATIVE.value:
@@ -82,21 +73,14 @@ async def generate_weekly_report(
     today = _as_local(now_in(), tz).date()
     week_start = week_start or (today - timedelta(days=today.weekday()))
     week_end = week_start + timedelta(days=7)
-    start_local = datetime.combine(week_start, time.min, tzinfo=tz)
-    end_local = datetime.combine(week_end, time.min, tzinfo=tz)
 
     per_day: dict[int, list[int]] = {}
     completed = 0
     missed = 0
     unanswered = 0
-    for event in await _events_in_range(session, user_id, start_local, end_local):
-        local_date = _as_local(event.scheduled_at, tz).date()
-        if not (week_start <= local_date < week_end):
-            continue
+    for event in await _events_for_local_date_range(session, user_id, week_start, week_end):
         status = event.status
-        if status in (ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value):
-            continue
-        weekday = local_date.isoweekday()
+        weekday = event.scheduled_local_date.isoweekday()
         counts = per_day.setdefault(weekday, [0, 0])
         counts[0] += 1
         if status == ReminderStatus.POSITIVE.value:
@@ -131,20 +115,35 @@ async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
     return name or settings.timezone
 
 
-async def _events_in_range(
-    session: AsyncSession,
-    user_id: int,
-    start_local: datetime,
-    end_local: datetime,
+async def _events_for_local_date(
+    session: AsyncSession, user_id: int, day: date
 ) -> list[ReminderEvent]:
-    server_tz = get_user_timezone(settings.timezone)
-    start = start_local.astimezone(server_tz) - timedelta(days=_WINDOW_MARGIN_DAYS)
-    end = end_local.astimezone(server_tz) + timedelta(days=_WINDOW_MARGIN_DAYS)
     result = await session.execute(
         select(ReminderEvent).where(
             ReminderEvent.user_id == user_id,
-            ReminderEvent.scheduled_at >= start,
-            ReminderEvent.scheduled_at < end,
+            ReminderEvent.scheduled_local_date == day,
+            ReminderEvent.status.notin_(
+                [ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value]
+            ),
+        )
+    )
+    return list(result.scalars().all())
+
+
+async def _events_for_local_date_range(
+    session: AsyncSession,
+    user_id: int,
+    start: date,
+    end: date,
+) -> list[ReminderEvent]:
+    result = await session.execute(
+        select(ReminderEvent).where(
+            ReminderEvent.user_id == user_id,
+            ReminderEvent.scheduled_local_date >= start,
+            ReminderEvent.scheduled_local_date < end,
+            ReminderEvent.status.notin_(
+                [ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value]
+            ),
         )
     )
     return list(result.scalars().all())
