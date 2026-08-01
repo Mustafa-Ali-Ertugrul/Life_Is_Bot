@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,7 +71,7 @@ async def generate_today_events(
     tz = get_user_timezone(await _user_timezone_name(session, user_id))
     base = now if now is not None else now_in()
     if base.tzinfo is None:
-        base = base.replace(tzinfo=timezone.utc)
+        base = base.replace(tzinfo=UTC)
     local_now = base.astimezone(tz)
     weekday = local_now.isoweekday()
     habits = await list_habits(session, user_id)

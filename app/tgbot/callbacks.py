@@ -186,7 +186,9 @@ async def _handle_reminder_callback(
             await query.answer("Hatırlatma bulunamadı", show_alert=True)
             return
         except PermissionDeniedError:
-            logger.warning("reminder callback rejected, permission denied", user_id=user_id, event_id=event.id)
+            logger.warning(
+                "reminder callback rejected, permission denied", user_id=user_id, event_id=event.id
+            )
             await query.answer("Bu işlem için yetkiniz yok", show_alert=True)
             return
         except InvalidStateError:

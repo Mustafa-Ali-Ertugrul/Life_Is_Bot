@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -309,12 +309,12 @@ async def test_daily_report_uses_local_date_not_scheduled_at(db_session: AsyncSe
             bot_key=BotKey.HABIT.value,
             related_type="habit",
             related_id=1,
-            scheduled_at=datetime(2026, 8, 2, 2, 30, tzinfo=timezone.utc),
+            scheduled_at=datetime(2026, 8, 2, 2, 30, tzinfo=UTC),
             scheduled_local_date=date(2026, 8, 1),
             dedupe_key="report-local-date-test",
             status=ReminderStatus.POSITIVE.value,
             interpretation_json='{"habit_name": "Su iç"}',
-            created_at=datetime(2026, 8, 1, 0, 0, tzinfo=timezone.utc),
+            created_at=datetime(2026, 8, 1, 0, 0, tzinfo=UTC),
         )
     )
     await db_session.commit()
@@ -335,19 +335,17 @@ async def test_weekly_report_uses_local_date_range(db_session: AsyncSession) -> 
             bot_key=BotKey.HABIT.value,
             related_type="habit",
             related_id=1,
-            scheduled_at=datetime(2026, 8, 10, 2, 30, tzinfo=timezone.utc),
+            scheduled_at=datetime(2026, 8, 10, 2, 30, tzinfo=UTC),
             scheduled_local_date=date(2026, 8, 4),
             dedupe_key="report-weekly-local-date-test",
             status=ReminderStatus.POSITIVE.value,
             interpretation_json="{}",
-            created_at=datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc),
+            created_at=datetime(2026, 8, 3, 0, 0, tzinfo=UTC),
         )
     )
     await db_session.commit()
 
-    data = await report_service.generate_weekly_report(
-        db_session, user_id, week_start=week_start
-    )
+    data = await report_service.generate_weekly_report(db_session, user_id, week_start=week_start)
 
     assert data["total"] == 1
     assert data["completed"] == 1

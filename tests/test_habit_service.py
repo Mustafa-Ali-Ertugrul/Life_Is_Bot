@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -74,10 +74,8 @@ async def test_generate_today_events_uses_user_timezone(db_session: AsyncSession
     user = await user_service.find_or_create_by_telegram_id(db_session, TELEGRAM_USER_ID)
     user.timezone = "America/New_York"
     await db_session.commit()
-    await habit_service.create_habit(
-        db_session, user.id, "Sabah sporu", 9, 0, "6"
-    )
-    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=timezone.utc)
+    await habit_service.create_habit(db_session, user.id, "Sabah sporu", 9, 0, "6")
+    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=UTC)
 
     events = await habit_service.generate_today_events(db_session, user.id, now=fixed_now)
 
@@ -85,7 +83,7 @@ async def test_generate_today_events_uses_user_timezone(db_session: AsyncSession
     event = events[0]
     new_york = get_user_timezone("America/New_York")
     assert event.scheduled_at.astimezone(new_york).hour == 9
-    assert event.scheduled_at.astimezone(timezone.utc).hour == 13
+    assert event.scheduled_at.astimezone(UTC).hour == 13
     assert event.scheduled_local_date == datetime(2026, 8, 1, tzinfo=new_york).date()
 
 
@@ -100,7 +98,7 @@ async def test_generate_today_events_treats_naive_now_as_utc(db_session: AsyncSe
     )
 
     assert len(events) == 1
-    assert events[0].scheduled_at.astimezone(timezone.utc).hour == 13
+    assert events[0].scheduled_at.astimezone(UTC).hour == 13
 
 
 async def test_generate_today_events_uses_local_weekday(db_session: AsyncSession) -> None:
@@ -108,7 +106,7 @@ async def test_generate_today_events_uses_local_weekday(db_session: AsyncSession
     user.timezone = "America/New_York"
     await db_session.commit()
     await habit_service.create_habit(db_session, user.id, "Sabah sporu", 9, 0, "7")
-    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=timezone.utc)
+    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=UTC)
 
     events = await habit_service.generate_today_events(db_session, user.id, now=fixed_now)
 
