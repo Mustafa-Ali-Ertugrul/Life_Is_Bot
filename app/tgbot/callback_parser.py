@@ -9,11 +9,21 @@ class UICallbackKind(StrEnum):
     BOT_LIST = "bots"
     BOT_DETAIL = "detail"
     BOT_TOGGLE = "toggle"
+    HABIT = "habit"
     SETTINGS = "settings"
     REPORTS = "reports"
     HELP = "help"
     CONSENT_YES = "consent:yes"
     CONSENT_NO = "consent:no"
+
+
+class HabitAction(StrEnum):
+    LIST = "list"
+    NEW = "new"
+    DETAIL = "detail"
+    TOGGLE = "toggle"
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
 
 
 class ReminderAction(StrEnum):
@@ -27,6 +37,8 @@ class ReminderAction(StrEnum):
 class UICallback:
     kind: UICallbackKind
     bot_key: BotKey | None = None
+    habit_action: HabitAction | None = None
+    habit_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -44,6 +56,12 @@ def format_ui(kind: UICallbackKind, bot_key: BotKey | None = None) -> str:
     if bot_key is None:
         return f"{UI_PREFIX}{kind.value}"
     return f"{UI_PREFIX}{kind.value}:{bot_key.value}"
+
+
+def format_habit_ui(action: HabitAction, habit_id: int | None = None) -> str:
+    if habit_id is None:
+        return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}"
+    return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}:{habit_id}"
 
 
 def format_reminder(event_id: int, action: ReminderAction, minutes: int | None = None) -> str:
@@ -70,7 +88,23 @@ def parse_ui(data: str) -> UICallback | None:
             bot_key = BotKey(parts[1])
         except ValueError:
             return None
-    return UICallback(kind=kind, bot_key=bot_key)
+    habit_action: HabitAction | None = None
+    habit_id: int | None = None
+    if kind is UICallbackKind.HABIT:
+        if len(parts) < 2:
+            return None
+        try:
+            habit_action = HabitAction(parts[1])
+        except ValueError:
+            return None
+        if habit_action in (HabitAction.DETAIL, HabitAction.TOGGLE):
+            if len(parts) < 3:
+                return None
+            try:
+                habit_id = int(parts[2])
+            except ValueError:
+                return None
+    return UICallback(kind=kind, bot_key=bot_key, habit_action=habit_action, habit_id=habit_id)
 
 
 def parse_reminder(data: str) -> ReminderCallback | None:

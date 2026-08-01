@@ -9,6 +9,7 @@ from app.models.enums import (
     ResponseType,
     consent_requirement_for,
 )
+from app.models.habit import Habit
 from app.models.notification_log import NotificationLog
 from app.models.reminder_event import ReminderEvent
 from app.models.telegram_account import TelegramAccount
@@ -22,6 +23,7 @@ __all__ = [
     "BotKey",
     "BotPreference",
     "ConsentRequirement",
+    "Habit",
     "NotificationLog",
     "ReminderEvent",
     "ReminderStatus",

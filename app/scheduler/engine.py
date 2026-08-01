@@ -6,7 +6,7 @@ from telegram import Bot
 
 from app.core.config import settings
 from app.core.logger import get_logger
-from app.scheduler.jobs import reminder_tick
+from app.scheduler.jobs import habit_daily_job, reminder_tick
 
 logger = get_logger("scheduler.engine")
 
@@ -45,6 +45,14 @@ def start_scheduler() -> AsyncIOScheduler:
             id="debug_tick",
             replace_existing=True,
         )
+    scheduler.add_job(
+        habit_daily_job,
+        trigger="cron",
+        hour=0,
+        minute=5,
+        id="habit_daily",
+        replace_existing=True,
+    )
     scheduler.start()
     _interval_scheduler = scheduler
     logger.info("scheduler started", interval_seconds=settings.scheduler_interval_seconds)

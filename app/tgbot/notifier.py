@@ -1,3 +1,5 @@
+import json
+
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.core.logger import get_logger
@@ -8,9 +10,21 @@ from app.tgbot.messages import BOT_KEYS_TR
 logger = get_logger("telegram.notifier")
 
 
+def _event_label(event: ReminderEvent) -> str:
+    if event.related_type == "habit":
+        try:
+            data = json.loads(event.interpretation_json or "{}")
+        except ValueError:
+            data = {}
+        name = data.get("habit_name")
+        if name:
+            return str(name)
+    return event.related_type or "hatırlatma"
+
+
 def build_reminder_message(event: ReminderEvent) -> tuple[str, InlineKeyboardMarkup]:
     bot_name = BOT_KEYS_TR[BotKey(event.bot_key)]
-    label = event.related_type or "hatırlatma"
+    label = _event_label(event)
     text = f"{bot_name} hatırlatması: {label}"
     keyboard = InlineKeyboardMarkup(
         [

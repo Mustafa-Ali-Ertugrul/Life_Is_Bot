@@ -3,7 +3,7 @@ from app.core.database import async_session_factory
 from app.core.logger import get_logger
 from app.core.timezone import now_in
 from app.scheduler.engine import get_bot
-from app.services import notification_service, reminder_service
+from app.services import habit_service, notification_service, reminder_service
 from app.tgbot.notifier import send_reminder
 
 logger = get_logger("scheduler.jobs")
@@ -39,3 +39,9 @@ async def reminder_tick() -> None:
                 status="sent",
             )
     logger.info("reminder tick done", due_count=len(due))
+
+
+async def habit_daily_job() -> None:
+    async with async_session_factory() as session:
+        created = await habit_service.generate_today_events_for_all(session)
+    logger.info("habit daily job done", created_count=created)

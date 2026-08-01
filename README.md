@@ -17,12 +17,24 @@ Telegram tabanlı sağlık ve rutin takip botu. Günlük rutinler, spor, supplem
 - Sorgu index'leri (reminder_events, user_responses, notification_logs)
 - GitHub Actions CI (mypy --strict, ruff, pytest)
 
+## Faz 1: Hatırlatma Motoru ve Rutin Botu
+
+- Gerçek hatırlatma motoru: due event tarama, atomik/idempotent `mark_notified`, duplicate önleme
+- Bildirim mesajı + yanıt butonları (tamamlandı / yapılmadı / ertele / atla)
+- Ertelenen (snooze) hatırlatma için yeni event üretimi
+- Bot bazlı yanıt akışı ve `should_skip_notify` kontrolleri (tercih, yanıt, durum)
+- Rutin (habit) botu: `/rutin` ve `/rutin_ekle` — isim, saat, gün seçimi (1-7)
+- Günlük 00:05 job'ı ile habit'lere göre günlük hatırlatma event'leri üretimi
+- `habits` tablosu + completion istatistikleri
+
 ### Komutlar
 
 | Komut | Açıklama |
 |---|---|
 | `/start` | Ana menü |
 | `/botlar` | Botları yönet (aç/kapat) |
+| `/rutin` | Rutinlerini yönet |
+| `/rutin_ekle` | Yeni rutin ekle (adım adım) |
 | `/ayarlar` | Ayarlar (Faz 1) |
 | `/rapor` | Raporlar (Faz 1) |
 | `/yardim` | Yardım |
@@ -63,11 +75,12 @@ uv run pytest tests/ -v
 | `user_responses` | Kullanıcı yanıtları (audit: `is_current`) |
 | `notification_logs` | Gönderilen bildirim logları |
 | `audit_logs` | Denetim logları |
+| `habits` | Rutin (habit) tanımları |
 
 ## Yol Haritası
 
-- **Faz 1**: FastAPI (mobil senkronizasyon), gerçek scheduler mantığı, raporlar, ayarlar
-- **Faz 2**: Rutin (habit), Spor, Supplement botları
+- **Faz 1**: ✅ Hatırlatma motoru, Rutin botu — sonraki adım: FastAPI (mobil senkronizasyon), raporlar, ayarlar
+- **Faz 2**: Spor, Supplement botları
 - **Faz 3**: Adım, Sağlık değerlendirme, İlaç botları
 
 ## Lisans

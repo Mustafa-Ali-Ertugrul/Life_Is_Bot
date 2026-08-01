@@ -8,12 +8,14 @@ from app.core.timezone import now_in
 from app.models import BotKey, ResponseType
 from app.services import preference_service, reminder_service, response_service, user_service
 from app.tgbot.callback_parser import (
+    HabitAction,
     ReminderAction,
     ReminderCallback,
     UICallback,
     UICallbackKind,
     parse,
 )
+from app.tgbot.habit_handlers import show_habit_detail, show_habit_list, toggle_habit
 from app.tgbot.keyboards import bot_detail, bot_list, main_menu
 from app.tgbot.messages import (
     BOT_ACTIVATED,
@@ -85,6 +87,19 @@ async def _handle_ui_callback(
             user_id = await _ensure_user(context, update)
         assert parsed.bot_key is not None
         await _toggle_bot(query, user_id, parsed.bot_key)
+        return
+
+    if parsed.kind is UICallbackKind.HABIT:
+        if parsed.habit_action is HabitAction.LIST:
+            await show_habit_list(update, context, parsed)
+            return
+        if parsed.habit_action is HabitAction.DETAIL:
+            await show_habit_detail(update, context, parsed)
+            return
+        if parsed.habit_action is HabitAction.TOGGLE:
+            await toggle_habit(update, context, parsed)
+            return
+        await query.answer("Geçersiz istek")
         return
 
     if parsed.kind is UICallbackKind.CONSENT_YES:
