@@ -1,3 +1,41 @@
-from app.scheduler.engine import scheduler_tick, start_scheduler, stop_scheduler
+from app.core.config import settings
+from app.core.database import async_session_factory
+from app.core.logger import get_logger
+from app.core.timezone import now_in
+from app.scheduler.engine import get_bot
+from app.services import notification_service, reminder_service
+from app.tgbot.notifier import send_reminder
 
-__all__ = ["scheduler_tick", "start_scheduler", "stop_scheduler"]
+logger = get_logger("scheduler.jobs")
+
+
+async def reminder_tick() -> None:
+    bot = get_bot()
+    if bot is None:
+        logger.warning("reminder tick skipped, no bot instance")
+        return
+
+    async with async_session_factory() as session:
+        due = await reminder_service.find_due_events(
+            session, now_in(), limit=settings.scheduler_batch_size
+        )
+        for event in due:
+            if await reminder_service.should_skip_notify(session, event):
+                continue
+            message_id = await send_reminder(bot, event)
+            if message_id is None:
+                logger.warning("reminder send failed, will retry", event_id=event.id)
+                continue
+            notified = await reminder_service.mark_notified(session, event.id)
+            if not notified:
+                logger.warning("reminder already handled", event_id=event.id)
+                continue
+            await notification_service.log_notification(
+                session,
+                user_id=event.user_id,
+                reminder_event_id=event.id,
+                message=f"reminder {event.id}",
+                channel="telegram",
+                status="sent",
+            )
+    logger.info("reminder tick done", due_count=len(due))
