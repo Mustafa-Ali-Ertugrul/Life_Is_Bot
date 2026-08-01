@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     bot_token: str = ""
-    database_url: str = "sqlite+aiosqlite:///rutinbot.db"
+    database_url: str = "sqlite+aiosqlite:///life_is_bot.db"
     timezone: str = "Europe/Istanbul"
     default_language: str = "tr"
     scheduler_interval_seconds: int = 60
