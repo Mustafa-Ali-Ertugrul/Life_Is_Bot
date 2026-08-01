@@ -195,18 +195,6 @@ async def test_generate_today_events_is_idempotent(db_session: AsyncSession) -> 
     assert second[0].id == first[0].id
 
 
-async def test_generate_today_events_for_all_only_active_users(db_session: AsyncSession) -> None:
-    user_id = await _user(db_session)
-    weekday = now_in().isoweekday()
-    await supplement_service.create_supplement_plan(
-        db_session, user_id, "D Vitamini", str(weekday), 9, 0
-    )
-
-    created = await supplement_service.generate_today_events_for_all(db_session)
-
-    assert created >= 1
-
-
 def test_supplement_reminder_uses_supplement_label() -> None:
     from app.modules.supplement import SupplementModule
 

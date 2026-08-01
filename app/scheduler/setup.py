@@ -6,12 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[impo
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.scheduler.engine import set_scheduler
-from app.scheduler.jobs import (
-    habit_daily_job,
-    reminder_tick,
-    sport_daily_job,
-    supplement_daily_job,
-)
+from app.scheduler.jobs import daily_events_job, reminder_tick
 
 logger = get_logger("scheduler.setup")
 
@@ -36,27 +31,11 @@ def setup_scheduler() -> AsyncIOScheduler:
             replace_existing=True,
         )
     scheduler.add_job(
-        habit_daily_job,
+        daily_events_job,
         trigger="cron",
         hour=0,
         minute=5,
-        id="habit_daily",
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        sport_daily_job,
-        trigger="cron",
-        hour=0,
-        minute=6,
-        id="sport_daily",
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        supplement_daily_job,
-        trigger="cron",
-        hour=0,
-        minute=7,
-        id="supplement_daily",
+        id="daily_events",
         replace_existing=True,
     )
 

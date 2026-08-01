@@ -156,18 +156,6 @@ async def test_generate_today_events_is_idempotent(db_session: AsyncSession) -> 
     assert second[0].id == first[0].id
 
 
-async def test_generate_today_events_for_all_only_active_users(
-    db_session: AsyncSession,
-) -> None:
-    user_id = await _user(db_session)
-    weekday = now_in().isoweekday()
-    await habit_service.create_habit(db_session, user_id, "Sabah sporu", 8, 30, str(weekday))
-
-    created = await habit_service.generate_today_events_for_all(db_session)
-
-    assert created >= 1
-
-
 async def test_completion_stats_counts_events(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     weekday = now_in().isoweekday()

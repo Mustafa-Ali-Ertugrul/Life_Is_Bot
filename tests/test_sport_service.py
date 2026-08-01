@@ -163,18 +163,6 @@ async def test_generate_today_events_is_idempotent(db_session: AsyncSession) -> 
     assert second[0].id == first[0].id
 
 
-async def test_generate_today_events_for_all_only_active_users(
-    db_session: AsyncSession,
-) -> None:
-    user_id = await _user(db_session)
-    weekday = now_in().isoweekday()
-    await sport_service.create_sport_plan(db_session, user_id, "Koşu", str(weekday), 18, 30)
-
-    created = await sport_service.generate_today_events_for_all(db_session)
-
-    assert created >= 1
-
-
 async def test_completion_stats_counts_events(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
     weekday = now_in().isoweekday()

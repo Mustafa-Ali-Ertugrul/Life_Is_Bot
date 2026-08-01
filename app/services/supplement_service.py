@@ -133,28 +133,12 @@ async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
     return result.scalar_one_or_none() or settings.timezone
 
 
-async def generate_today_events_for_all(session: AsyncSession) -> int:
-    result = await session.execute(
-        select(SupplementPlan)
-        .join(User, SupplementPlan.user_id == User.id)
-        .where(SupplementPlan.is_active.is_(True), User.is_active.is_(True))
-    )
-    plans = list(result.scalars().all())
-    user_ids = {plan.user_id for plan in plans}
-    created = 0
-    for user_id in user_ids:
-        events = await generate_today_events(session, user_id)
-        created += len(events)
-    return created
-
-
 __all__ = [
     "RELATED_TYPE",
     "SupplementPlan",
     "VALID_WITH_FOOD",
     "create_supplement_plan",
     "generate_today_events",
-    "generate_today_events_for_all",
     "get_supplement_plan",
     "list_supplement_plans",
     "toggle_supplement_plan",
