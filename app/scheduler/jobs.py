@@ -4,13 +4,8 @@ from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
 from app.models import NotificationLogStatus
-from app.services import (
-    habit_service,
-    notification_service,
-    reminder_service,
-    sport_service,
-    supplement_service,
-)
+from app.modules.registry import get_modules
+from app.services import notification_service, reminder_service
 from app.tgbot.notifier import send_reminder
 
 logger = get_logger("scheduler.jobs")
@@ -86,19 +81,11 @@ async def reminder_tick() -> None:
     logger.info("reminder tick done", due_count=len(due))
 
 
-async def habit_daily_job() -> None:
+async def daily_events_job() -> None:
+    total = 0
+    now = now_in("UTC")
     async with async_session_factory() as session:
-        created = await habit_service.generate_today_events_for_all(session)
-    logger.info("habit daily job done", created_count=created)
-
-
-async def sport_daily_job() -> None:
-    async with async_session_factory() as session:
-        created = await sport_service.generate_today_events_for_all(session)
-    logger.info("sport daily job done", created_count=created)
-
-
-async def supplement_daily_job() -> None:
-    async with async_session_factory() as session:
-        created = await supplement_service.generate_today_events_for_all(session)
-    logger.info("supplement daily job done", created_count=created)
+        for module in get_modules():
+            created = await module.generate_daily_events_for_all(session, now_utc=now)
+            total += created
+    logger.info("daily events job done", created_count=total)

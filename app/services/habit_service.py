@@ -98,21 +98,6 @@ async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
     return result.scalar_one_or_none() or settings.timezone
 
 
-async def generate_today_events_for_all(session: AsyncSession) -> int:
-    result = await session.execute(
-        select(Habit)
-        .join(User, Habit.user_id == User.id)
-        .where(Habit.is_active.is_(True), User.is_active.is_(True))
-    )
-    habits = list(result.scalars().all())
-    user_ids = {habit.user_id for habit in habits}
-    created = 0
-    for user_id in user_ids:
-        events = await generate_today_events(session, user_id)
-        created += len(events)
-    return created
-
-
 async def get_completion_stats(
     session: AsyncSession, user_id: int, days: int = 7, now: datetime | None = None
 ) -> dict[str, int]:
@@ -135,7 +120,6 @@ __all__ = [
     "RELATED_TYPE",
     "create_habit",
     "generate_today_events",
-    "generate_today_events_for_all",
     "get_completion_stats",
     "get_habit",
     "list_habits",
