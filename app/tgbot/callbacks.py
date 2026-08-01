@@ -32,10 +32,10 @@ from app.tgbot.messages import (
     CONSENT_GRANTED,
     CORE_BOT_CANNOT_BE_DISABLED,
     HELP,
-    REPORT_STUB,
     SETTINGS_STUB,
     WELCOME,
 )
+from app.tgbot.report_handlers import show_report
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -122,8 +122,7 @@ async def _handle_ui_callback(
         return
 
     if parsed.kind is UICallbackKind.REPORTS:
-        await query.edit_message_text(REPORT_STUB)
-        await query.answer()
+        await show_report(update, context, parsed)
         return
 
     if parsed.kind is UICallbackKind.HELP:

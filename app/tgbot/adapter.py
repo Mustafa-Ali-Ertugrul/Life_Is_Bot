@@ -11,10 +11,11 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.scheduler.engine import set_bot, start_scheduler
 from app.tgbot.callbacks import handle_callback
-from app.tgbot.commands import cmd_ayarlar, cmd_botlar, cmd_rapor, cmd_start, cmd_yardim
+from app.tgbot.commands import cmd_ayarlar, cmd_botlar, cmd_start, cmd_yardim
 from app.tgbot.error_handler import handle_error
 from app.tgbot.habit_handlers import cmd_rutin, habit_conversation
 from app.tgbot.messages import COMMANDS
+from app.tgbot.report_handlers import cmd_rapor
 
 logger = get_logger("telegram.adapter")
 

@@ -3,10 +3,12 @@ from app.tgbot.callback_parser import (
     HabitAction,
     ReminderAction,
     ReminderCallback,
+    ReportAction,
     UICallback,
     UICallbackKind,
     format_habit_ui,
     format_reminder,
+    format_report_ui,
     format_ui,
     parse,
     parse_reminder,
@@ -65,6 +67,35 @@ def test_parse_ui_habit_invalid() -> None:
     assert parse_ui("ui:habit:detail") is None
     assert parse_ui("ui:habit:detail:abc") is None
     assert parse_ui("ui:habit:bilinmeyen") is None
+
+
+def test_format_report_ui() -> None:
+    assert format_report_ui(ReportAction.DAILY) == "ui:reports:daily"
+    assert format_report_ui(ReportAction.WEEKLY) == "ui:reports:weekly"
+
+
+def test_parse_ui_reports_actions() -> None:
+    parsed_root = parse_ui("ui:reports")
+    assert parsed_root is not None
+    assert parsed_root.kind is UICallbackKind.REPORTS
+    assert parsed_root.report_action is None
+
+    parsed_daily = parse_ui("ui:reports:daily")
+    assert parsed_daily is not None
+    assert parsed_daily.kind is UICallbackKind.REPORTS
+    assert parsed_daily.report_action is ReportAction.DAILY
+
+    parsed_weekly = parse_ui("ui:reports:weekly")
+    assert parsed_weekly is not None
+    assert parsed_weekly.report_action is ReportAction.WEEKLY
+
+
+def test_parse_ui_reports_invalid() -> None:
+    assert parse_ui("ui:reports:aylik") is None
+
+    parsed_extra = parse_ui("ui:reports:daily:extra")
+    assert parsed_extra is not None
+    assert parsed_extra.report_action is ReportAction.DAILY
 
 
 def test_parse_reminder_done() -> None:

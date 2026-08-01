@@ -26,6 +26,11 @@ class HabitAction(StrEnum):
     CANCEL = "cancel"
 
 
+class ReportAction(StrEnum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+
+
 class ReminderAction(StrEnum):
     DONE = "d"
     NOT_DONE = "n"
@@ -39,6 +44,7 @@ class UICallback:
     bot_key: BotKey | None = None
     habit_action: HabitAction | None = None
     habit_id: int | None = None
+    report_action: ReportAction | None = None
 
 
 @dataclass(frozen=True)
@@ -62,6 +68,10 @@ def format_habit_ui(action: HabitAction, habit_id: int | None = None) -> str:
     if habit_id is None:
         return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}"
     return f"{UI_PREFIX}{UICallbackKind.HABIT.value}:{action.value}:{habit_id}"
+
+
+def format_report_ui(action: ReportAction) -> str:
+    return f"{UI_PREFIX}{UICallbackKind.REPORTS.value}:{action.value}"
 
 
 def format_reminder(event_id: int, action: ReminderAction, minutes: int | None = None) -> str:
@@ -104,7 +114,20 @@ def parse_ui(data: str) -> UICallback | None:
                 habit_id = int(parts[2])
             except ValueError:
                 return None
-    return UICallback(kind=kind, bot_key=bot_key, habit_action=habit_action, habit_id=habit_id)
+    report_action: ReportAction | None = None
+    if kind is UICallbackKind.REPORTS:
+        if len(parts) >= 2:
+            try:
+                report_action = ReportAction(parts[1])
+            except ValueError:
+                return None
+    return UICallback(
+        kind=kind,
+        bot_key=bot_key,
+        habit_action=habit_action,
+        habit_id=habit_id,
+        report_action=report_action,
+    )
 
 
 def parse_reminder(data: str) -> ReminderCallback | None:
