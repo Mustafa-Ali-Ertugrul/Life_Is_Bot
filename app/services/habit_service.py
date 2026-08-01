@@ -1,10 +1,11 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import now_in
+from app.core.config import settings
+from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, Habit, ReminderEvent, ReminderStatus, User
 from app.services import reminder_service
 
@@ -67,8 +68,12 @@ async def toggle_habit(session: AsyncSession, habit_id: int, is_active: bool) ->
 async def generate_today_events(
     session: AsyncSession, user_id: int, now: datetime | None = None
 ) -> list[ReminderEvent]:
-    now = now or now_in()
-    weekday = now.isoweekday()
+    tz = get_user_timezone(await _user_timezone_name(session, user_id))
+    base = now if now is not None else now_in()
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    local_now = base.astimezone(tz)
+    weekday = local_now.isoweekday()
     habits = await list_habits(session, user_id)
     events: list[ReminderEvent] = []
     for habit in habits:
@@ -76,12 +81,13 @@ async def generate_today_events(
             continue
         if weekday not in parse_days(habit.days_of_week):
             continue
-        scheduled_at = now.replace(
+        local_scheduled = local_now.replace(
             hour=habit.target_hour,
             minute=habit.target_minute,
             second=0,
             microsecond=0,
         )
+        scheduled_at = local_scheduled.astimezone(get_user_timezone(settings.timezone))
         event = await reminder_service.create_event(
             session,
             user_id=user_id,
@@ -93,6 +99,11 @@ async def generate_today_events(
         )
         events.append(event)
     return events
+
+
+async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
+    result = await session.execute(select(User.timezone).where(User.id == user_id))
+    return result.scalar_one_or_none() or settings.timezone
 
 
 async def generate_today_events_for_all(session: AsyncSession) -> int:

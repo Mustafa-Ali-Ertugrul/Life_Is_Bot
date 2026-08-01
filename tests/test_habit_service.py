@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import now_in
+from app.core.config import settings
+from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus
 from app.services import habit_service, user_service
 from tests.conftest import TELEGRAM_USER_ID
@@ -65,8 +66,53 @@ async def test_generate_today_events_creates_for_matching_day(db_session: AsyncS
     assert event.bot_key == BotKey.HABIT.value
     assert event.related_type == "habit"
     assert event.related_id == habit.id
-    assert event.scheduled_at.replace(tzinfo=today.tzinfo).hour == 8
+    assert event.scheduled_at.astimezone(get_user_timezone(settings.timezone)).hour == 8
     assert "Sabah sporu" in event.interpretation_json
+
+
+async def test_generate_today_events_uses_user_timezone(db_session: AsyncSession) -> None:
+    user = await user_service.find_or_create_by_telegram_id(db_session, TELEGRAM_USER_ID)
+    user.timezone = "America/New_York"
+    await db_session.commit()
+    await habit_service.create_habit(
+        db_session, user.id, "Sabah sporu", 9, 0, "6"
+    )
+    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=timezone.utc)
+
+    events = await habit_service.generate_today_events(db_session, user.id, now=fixed_now)
+
+    assert len(events) == 1
+    event = events[0]
+    new_york = get_user_timezone("America/New_York")
+    assert event.scheduled_at.astimezone(new_york).hour == 9
+    assert event.scheduled_at.astimezone(timezone.utc).hour == 13
+    assert event.scheduled_local_date == datetime(2026, 8, 1, tzinfo=new_york).date()
+
+
+async def test_generate_today_events_treats_naive_now_as_utc(db_session: AsyncSession) -> None:
+    user = await user_service.find_or_create_by_telegram_id(db_session, TELEGRAM_USER_ID)
+    user.timezone = "America/New_York"
+    await db_session.commit()
+    await habit_service.create_habit(db_session, user.id, "Sabah sporu", 9, 0, "6")
+
+    events = await habit_service.generate_today_events(
+        db_session, user.id, now=datetime(2026, 8, 1, 23, 0)
+    )
+
+    assert len(events) == 1
+    assert events[0].scheduled_at.astimezone(timezone.utc).hour == 13
+
+
+async def test_generate_today_events_uses_local_weekday(db_session: AsyncSession) -> None:
+    user = await user_service.find_or_create_by_telegram_id(db_session, TELEGRAM_USER_ID)
+    user.timezone = "America/New_York"
+    await db_session.commit()
+    await habit_service.create_habit(db_session, user.id, "Sabah sporu", 9, 0, "7")
+    fixed_now = datetime(2026, 8, 1, 23, 0, tzinfo=timezone.utc)
+
+    events = await habit_service.generate_today_events(db_session, user.id, now=fixed_now)
+
+    assert events == []
 
 
 async def test_generate_today_events_skips_non_matching_day(db_session: AsyncSession) -> None:
