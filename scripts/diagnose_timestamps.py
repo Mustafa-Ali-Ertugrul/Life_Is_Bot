@@ -1,16 +1,17 @@
-"""Diagnose timestamp formats in `reminder_events`.
+"""Audit pending timestamps in `reminder_events`.
 
-Read-only. Prints a breakdown of naive vs aware timestamps across
-`scheduled_at`, `notify_after`, and `created_at` per status, plus a list
-of future-facing (pending) rows whose `scheduled_at` or `notify_after` is
-naive. Used by #29 to decide whether a data-fix migration is required.
+Read-only. SQLite stores every datetime as an offset-less string
+(`YYYY-MM-DD HH:MM:SS.ffffff`); the ORM strips tzinfo on bind, so naive
+storage is the expected canonical form (UTC wall-clock). This script
+reports the stored formats and lists future-facing (pending) rows so the
+values can be eyeballed for plausibility.
 
 Usage:
     python scripts/diagnose_timestamps.py [sqlite_url]
 
     sqlite_url defaults to settings.database_url (e.g.
     sqlite+aiosqlite:///life_is_bot.db). A plain path or file:// URL is
-    also accepted; mdbt connections use the sync sqlite3 driver.
+    also accepted; connections use the sync sqlite3 driver.
 """
 
 from __future__ import annotations
@@ -22,31 +23,12 @@ from pathlib import Path
 from app.core.config import settings
 
 PENDING_STATUSES = ("scheduled", "snoozed")
-TERMINAL_STATUSES = (
-    "positive",
-    "negative",
-    "no_response",
-    "cancelled",
-    "suppressed",
-    "notified",
-)
-
-PENDING = "pending"
-TERMINAL = "terminal"
 
 
-def _is_aware(value: str | None) -> bool:
+def _is_naive_format(value: str | None) -> bool:
     if value is None:
         return False
-    return value.endswith(("+00:00", "Z", "+01:00", "+02:00", "+03:00", "-00:00", "-01:00"))
-
-
-def _classify(status: str) -> str:
-    if status in PENDING_STATUSES:
-        return PENDING
-    if status in TERMINAL_STATUSES:
-        return TERMINAL
-    return "other"
+    return not value.endswith(("Z", "+00:00", "+01:00", "+02:00", "+03:00", "-00:00"))
 
 
 def _db_path(url: str) -> str:
@@ -76,53 +58,30 @@ def main() -> int:
         cols = {row[1] for row in conn.execute("PRAGMA table_info(reminder_events)").fetchall()}
 
         print("== per-column format distribution ==")
+        print("  (naive = offset-less string; expected for SQLite storage)")
         for col in ("scheduled_at", "notify_after", "created_at"):
             if col not in cols:
                 continue
+            total = conn.execute(
+                f"SELECT COUNT(*) FROM reminder_events WHERE {col} IS NOT NULL"
+            ).fetchone()[0]
             naive = conn.execute(
-                f"SELECT COUNT(*) FROM reminder_events "
-                f"WHERE {col} IS NOT NULL AND {col} NOT LIKE '%+%' "
-                f"AND {col} NOT LIKE '%Z%'"
+                f"SELECT COUNT(*) FROM reminder_events WHERE {col} IS NOT NULL AND "
+                f"({col} NOT LIKE '%Z%' AND {col} NOT LIKE '%+%')"
             ).fetchone()[0]
-            aware = conn.execute(
-                f"SELECT COUNT(*) FROM reminder_events "
-                f"WHERE {col} IS NOT NULL AND ({col} LIKE '%+%' OR {col} LIKE '%Z%')"
-            ).fetchone()[0]
-            print(f"  {col:<14} naive={naive:<5} aware={aware}")
-
-        print("\n== format x status ==")
-        print(f"  {'status':<14} {'class':<9} {'naive':<6} {'aware'}")
-        for (status,) in conn.execute(
-            "SELECT DISTINCT status FROM reminder_events ORDER BY status"
-        ).fetchall():
-            if status is None:
-                continue
-            naive = conn.execute(
-                "SELECT COUNT(*) FROM reminder_events WHERE status = ? AND "
-                "scheduled_at IS NOT NULL AND scheduled_at NOT LIKE '%+%' "
-                "AND scheduled_at NOT LIKE '%Z%'",
-                (status,),
-            ).fetchone()[0]
-            aware = conn.execute(
-                "SELECT COUNT(*) FROM reminder_events WHERE status = ? "
-                "AND scheduled_at IS NOT NULL "
-                "AND (scheduled_at LIKE '%+%' OR scheduled_at LIKE '%Z%')",
-                (status,),
-            ).fetchone()[0]
-            print(f"  {status:<14} {_classify(status):<9} {naive:<6} {aware}")
+            print(f"  {col:<14} total={total:<5} naive={naive}")
 
         pending_cols = [c for c in ("scheduled_at", "notify_after") if c in cols]
         pending_rows = conn.execute(
             "SELECT id, user_id, status, scheduled_at, "
             + ", ".join(pending_cols)
             + " FROM reminder_events WHERE status IN ('scheduled', 'snoozed') "
-            "AND (scheduled_at NOT LIKE '%+%' OR notify_after NOT LIKE '%+%') "
             "ORDER BY id"
         ).fetchall()
 
-        print("\n== pending naive rows ==")
+        print("\n== pending rows (scheduled/snoozed) ==")
         if not pending_rows:
-            print("  (none - no data-fix migration required)")
+            print("  (none)")
         else:
             user_tz = dict(conn.execute("SELECT id, timezone FROM users").fetchall())
             for row in pending_rows:
@@ -140,12 +99,11 @@ def main() -> int:
             "SELECT COUNT(*) FROM reminder_events WHERE status IN ('scheduled', 'snoozed')"
         ).fetchone()[0]
         print(f"  total rows: {total}")
-        print(f"  pending rows (scheduled/snoozed): {pending_total}")
-        print(f"  pending naive rows needing fix: {len(pending_rows)}")
-        if pending_rows:
-            print("  -> data-fix migration is REQUIRED")
-        else:
-            print("  -> data-fix migration NOT required (policy + tests only)")
+        print(f"  pending rows: {pending_total}")
+        print(
+            "  storage is expected to be naive UTC wall-clock (SQLite strips tz); "
+            "no data-fix migration is required"
+        )
 
         return 0
     finally:
