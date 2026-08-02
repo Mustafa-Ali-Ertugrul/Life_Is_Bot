@@ -157,6 +157,10 @@ async def test_flow_quiet_hours_delays_until_next_job(
     user.quiet_hours_end = "07:00"
     await db_session.commit()
     await _enable(db_session, user.id, BotKey.HABIT)
+
+    day_now = datetime(2026, 8, 2, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr(jobs, "now_in", lambda *args: day_now)
+    monkeypatch.setattr("tests.test_digest_flow.now_in", lambda *args: day_now)
     await _event(db_session, user.id, BotKey.HABIT)
 
     await jobs.reminder_tick()
