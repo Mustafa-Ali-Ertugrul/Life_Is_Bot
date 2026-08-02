@@ -20,6 +20,7 @@ from app.tgbot.messages import COMMANDS
 from app.tgbot.report_handlers import cmd_rapor
 from app.tgbot.settings_handlers import cmd_ayarlar, settings_conversation
 from app.tgbot.sport_handlers import sport_conversation, sport_list_command, sport_menu_command
+from app.tgbot.step_handlers import step_conversation, step_menu_command
 from app.tgbot.supplement_handlers import (
     supplement_conversation,
     supplement_list_command,
@@ -56,11 +57,13 @@ def build_application() -> ApplicationT:
     application.add_handler(settings_conversation())
     application.add_handler(sport_conversation())
     application.add_handler(supplement_conversation())
+    application.add_handler(step_conversation())
     application.add_handler(CommandHandler("rutin", cmd_rutin))
     application.add_handler(CommandHandler("spor", sport_menu_command))
     application.add_handler(CommandHandler("spor_listesi", sport_list_command))
     application.add_handler(CommandHandler("supplement", supplement_menu_command))
     application.add_handler(CommandHandler("supplement_listesi", supplement_list_command))
+    application.add_handler(CommandHandler("adim", step_menu_command))
     application.add_handler(CallbackQueryHandler(handle_callback))
     application.add_error_handler(handle_error)
 

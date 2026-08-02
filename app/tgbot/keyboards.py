@@ -1,17 +1,19 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.models import BotPreference, Habit, SportPlan, SupplementPlan, User
+from app.models import BotPreference, Habit, SportPlan, StepSettings, SupplementPlan, User
 from app.tgbot.callback_parser import (
     HabitAction,
     ReportAction,
     SettingsAction,
     SportAction,
+    StepAction,
     SupplementAction,
     UICallbackKind,
     format_habit_ui,
     format_report_ui,
     format_settings_ui,
     format_sport_ui,
+    format_step_ui,
     format_supplement_ui,
     format_ui,
 )
@@ -249,6 +251,37 @@ def supplement_confirm() -> InlineKeyboardMarkup:
                 "İptal ❌", callback_data=format_supplement_ui(SupplementAction.CANCEL)
             ),
         ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def step_menu() -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton("📝 Adım Gir", callback_data=format_step_ui(StepAction.LOG)),
+            InlineKeyboardButton("⚙️ Ayarlar", callback_data=format_step_ui(StepAction.SETTINGS)),
+        ],
+        [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def step_settings_detail(settings: StepSettings) -> InlineKeyboardMarkup:
+    toggle_label = "⏸️ Pasif Et" if settings.is_active else "▶️ Aktif Et"
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "🎯 Hedef Değiştir", callback_data=format_step_ui(StepAction.GOAL)
+            ),
+            InlineKeyboardButton("⏰ Saat Değiştir", callback_data=format_step_ui(StepAction.TIME)),
+        ],
+        [
+            InlineKeyboardButton(
+                "📅 Günleri Değiştir", callback_data=format_step_ui(StepAction.DAYS)
+            ),
+            InlineKeyboardButton(toggle_label, callback_data=format_step_ui(StepAction.TOGGLE)),
+        ],
+        [InlineKeyboardButton("◀️ Geri", callback_data=format_step_ui(StepAction.MENU))],
     ]
     return InlineKeyboardMarkup(keyboard)
 

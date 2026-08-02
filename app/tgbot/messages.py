@@ -49,6 +49,8 @@ HELP = (
     "/spor - Spor menüsünü aç\n"
     "/spor_ekle - Yeni spor planı ekle\n"
     "/spor_listesi - Spor planlarını listele\n"
+    "/adim - Adım takibi menüsünü aç\n"
+    "/adim_gir - Bugünkü adımını gir\n"
     "/ayarlar - Ayarları göster\n"
     "/rapor - Raporları göster\n"
     "/yardim - Bu yardım menüsü"
@@ -236,6 +238,48 @@ SUPPLEMENT_TOGGLED_OFF = "Supplement planı pasif edildi."
 SUPPLEMENT_NOT_FOUND = "Supplement planı bulunamadı."
 SUPPLEMENT_DAYS_TR: dict[int, str] = HABIT_DAYS_TR
 
+STEP_MENU_HEADER = "🚶 Adım Takibi"
+STEP_TODAY_PROGRESS = "📊 Bugün: {steps} / {goal} adım ({pct}%)"
+STEP_TODAY_EMPTY = "📊 Bugün: Henüz adım girilmedi"
+STEP_GOAL_LINE = "🎯 Hedef: {goal} adım"
+STEP_REMINDER_LINE = "⏰ Hatırlatma: {time}"
+STEP_DAYS_LINE = "📅 Günler: {days}"
+STEP_STATUS_ACTIVE = "✅ Aktif"
+STEP_STATUS_INACTIVE = "⏸️ Pasif"
+
+STEP_SETTINGS_HEADER = "⚙️ Adım Ayarları"
+STEP_SETTINGS_GOAL = "🎯 Günlük Hedef: {goal}"
+STEP_SETTINGS_TIME = "⏰ Hatırlatma Saati: {time}"
+STEP_SETTINGS_DAYS = "📅 Günler: {days}"
+STEP_SETTINGS_STATUS = "📊 Durum: {status}"
+
+STEP_LOG_PROMPT = "📝 Bugünkü adım sayını gir:\nÖrn: 7500\n\n/iptal ile vazgeçebilirsin."
+STEP_LOG_SAVED = "✅ {steps} adım kaydedildi!\n🎯 Hedef: {goal} adım ({pct}%)"
+STEP_LOG_UPDATED = "🔄 Adım güncellendi: {steps} adım\n🎯 Hedef: {goal} adım ({pct}%)"
+STEP_INVALID_STEPS = "❌ Geçersiz adım sayısı. Lütfen 0-200000 arası bir sayı gir."
+
+STEP_GOAL_PROMPT = "🎯 Yeni günlük adım hedefini gir:\nÖrn: 10000\n\n/iptal ile vazgeçebilirsin."
+STEP_GOAL_SAVED = "✅ Günlük hedef {goal} adım olarak güncellendi."
+STEP_INVALID_GOAL = "❌ Geçersiz hedef. Lütfen 0-100000 arası bir sayı gir."
+
+STEP_TIME_PROMPT = "⏰ Yeni hatırlatma saatini gir:\nÖrn: 21:00\n\n/iptal ile vazgeçebilirsin."
+STEP_TIME_SAVED = "✅ Hatırlatma saati {time} olarak güncellendi."
+STEP_INVALID_TIME = "❌ Geçersiz saat formatı. Lütfen HH:MM formatında gir (örn: 21:00)."
+
+STEP_DAYS_PROMPT = (
+    "📅 Hatırlatma günlerini gir:\nÖrn: pzt, sal, çar, per, cum veya her gün\n\n"
+    "/iptal ile vazgeçebilirsin."
+)
+STEP_DAYS_SAVED = "✅ Günler güncellendi: {days}"
+STEP_INVALID_DAYS = (
+    "❌ Geçersiz gün listesi. Lütfen gün adlarını virgülle ayır (örn: pzt, çar, cum)."
+)
+
+STEP_TOGGLED_ON = "▶️ Adım takibi aktif edildi."
+STEP_TOGGLED_OFF = "⏸️ Adım takibi pasif edildi."
+STEP_CANCELLED = "❌ İşlem iptal edildi."
+STEP_FIRST_ACTIVATION = "🚶 Adım takibi aktif edildi! /adim ile menüye ulaşabilirsin."
+
 BOT_KEYS_TR: dict[BotKey, str] = {
     BotKey.CORE: "Genel Rutin",
     BotKey.HABIT: "Rutin",
@@ -257,6 +301,8 @@ COMMANDS = [
     ("supplement", "Supplement menüsünü aç"),
     ("supplement_ekle", "Yeni supplement planı ekle"),
     ("supplement_listesi", "Supplement planlarını listele"),
+    ("adim", "Adım takibi menüsü"),
+    ("adim_gir", "Bugünkü adımını gir"),
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
     ("yardim", "Yardım menüsü"),
