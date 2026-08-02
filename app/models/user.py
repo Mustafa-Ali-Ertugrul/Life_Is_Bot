@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -50,7 +50,9 @@ class User(Base, TimestampMixin):
 
     profile_type: Mapped[str | None] = mapped_column(String(20))
     onboarding_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    onboarding_skipped: Mapped[bool] = mapped_column(Boolean, default=False)
+    onboarding_skipped: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0")
+    )
 
     telegram_account: Mapped["TelegramAccount | None"] = relationship(
         back_populates="user", uselist=False
