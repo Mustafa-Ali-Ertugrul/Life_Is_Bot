@@ -65,6 +65,14 @@ async def reminder_tick() -> None:
             message_id = await send_reminder(bot, event)
             if message_id is None:
                 logger.warning("reminder send failed, will retry", event_id=event.id)
+                await notification_service.log_notification(
+                    session,
+                    user_id=event.user_id,
+                    reminder_event_id=event.id,
+                    message=f"reminder {event.id}",
+                    channel="telegram",
+                    status=NotificationLogStatus.FAILED.value,
+                )
                 continue
             notified = await reminder_service.mark_notified(session, event.id)
             if not notified:
