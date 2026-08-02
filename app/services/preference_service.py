@@ -20,6 +20,13 @@ async def get_preference(
     return result.scalar_one_or_none()
 
 
+async def is_enabled(session: AsyncSession, user_id: int, bot_key: BotKey) -> bool:
+    preference = await get_preference(session, user_id, bot_key)
+    if preference is None:
+        return bot_key is BotKey.CORE
+    return preference.enabled
+
+
 async def get_or_create_preference(
     session: AsyncSession, user_id: int, bot_key: BotKey
 ) -> BotPreference:
