@@ -1,5 +1,6 @@
 from app.models import BotKey
 from app.modules.habit import HabitModule
+from app.modules.medication import MedicationModule
 from app.modules.registry import (
     get_module_by_bot_key,
     get_module_by_related_type,
@@ -12,15 +13,16 @@ from app.modules.step import StepModule
 from app.modules.supplement import SupplementModule
 
 
-def test_setup_default_modules_registers_habit_sport_supplement_and_step() -> None:
+def test_setup_default_modules_registers_habit_sport_supplement_step_and_medication() -> None:
     setup_default_modules()
 
     modules = get_modules()
-    assert len(modules) == 4
+    assert len(modules) == 5
     assert isinstance(modules[0], HabitModule)
     assert isinstance(modules[1], SportModule)
     assert isinstance(modules[2], SupplementModule)
     assert isinstance(modules[3], StepModule)
+    assert isinstance(modules[4], MedicationModule)
 
 
 def test_get_module_by_bot_key_habit() -> None:
@@ -47,6 +49,12 @@ def test_get_module_by_bot_key_step() -> None:
     assert isinstance(get_module_by_bot_key(BotKey.STEP), StepModule)
 
 
+def test_get_module_by_bot_key_medication() -> None:
+    setup_default_modules()
+
+    assert isinstance(get_module_by_bot_key(BotKey.MEDICATION), MedicationModule)
+
+
 def test_get_module_by_related_type_habit() -> None:
     setup_default_modules()
 
@@ -71,6 +79,12 @@ def test_get_module_by_related_type_step_goal() -> None:
     assert isinstance(get_module_by_related_type("step_goal"), StepModule)
 
 
+def test_get_module_by_related_type_medication() -> None:
+    setup_default_modules()
+
+    assert isinstance(get_module_by_related_type("medication_plan"), MedicationModule)
+
+
 def test_get_module_by_related_type_none() -> None:
     setup_default_modules()
 
@@ -93,4 +107,4 @@ def test_register_module_manual_registration() -> None:
     setup_default_modules()
     register_module(HabitModule())
 
-    assert len(get_modules()) == 5
+    assert len(get_modules()) == 6
