@@ -100,6 +100,7 @@ ONBOARDING_INVALID_NUMBER = (
     "Geçersiz adım hedefi. 1000 ile 100000 arasında bir sayı girin.\n\n/iptal ile vazgeçebilirsin."
 )
 ONBOARDING_MULTI_HINT = "En az bir seçenek seçin veya /iptal ile vazgeçin."
+ONBOARDING_CHOICE_HINT = "Lütfen butonlardan birini seçin."
 ONBOARDING_SKIPPED = (
     "Onboarding atlandı. İstediğin zaman /ayarlar menüsünden profilini oluşturabilirsin."
 )
