@@ -67,6 +67,14 @@ async def list_active_users(session: AsyncSession) -> list[User]:
     return list(result.scalars().all())
 
 
+async def list_active_users_eager(session: AsyncSession) -> list[User]:
+    """Active users with telegram_account loaded (async-safe relationship access)."""
+    result = await session.execute(
+        select(User).where(User.is_active.is_(True)).options(selectinload(User.telegram_account))
+    )
+    return list(result.scalars().all())
+
+
 async def count_active_users(session: AsyncSession) -> int:
     result = await session.execute(
         select(func.count()).select_from(User).where(User.is_active.is_(True))
