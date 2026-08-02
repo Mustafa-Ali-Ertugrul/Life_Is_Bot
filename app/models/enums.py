@@ -26,6 +26,7 @@ class NotificationLogStatus(StrEnum):
     SENT = "sent"
     FAILED = "failed"
     ABANDONED = "abandoned"
+    DIGEST_PENDING = "digest_pending"
     DEFERRED_QUIET_HOURS = "deferred_quiet_hours"
     SUPPRESSED_DISABLED = "suppressed_disabled"
     SUPPRESSED_BOT_DISABLED = "suppressed_bot_disabled"

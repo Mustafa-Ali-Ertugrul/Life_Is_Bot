@@ -7,9 +7,17 @@ from sqlalchemy.orm import selectinload
 from telegram import Bot
 
 from app.core.config import settings
-from app.core.timezone import now_in
+from app.core.quiet_hours import is_within_quiet_hours
+from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, NotificationLog, NotificationLogStatus, ReminderEvent, User
-from app.tgbot.messages import ABANDONED_MULTIPLE, ABANDONED_SINGLE, BOT_KEYS_TR
+from app.services.event_labels import event_label
+from app.tgbot.messages import (
+    ABANDONED_MULTIPLE,
+    ABANDONED_SINGLE,
+    BOT_KEYS_TR,
+    DIGEST_HEADER,
+    DIGEST_ITEM,
+)
 
 
 async def log_notification(
@@ -154,10 +162,92 @@ async def _format_abandoned(session: AsyncSession, logs: list[NotificationLog]) 
     return ABANDONED_MULTIPLE.format(count=len(logs), bot_names=bot_names)
 
 
+async def send_digest(
+    session: AsyncSession,
+    bot: Bot,
+    send_fn: Callable[[Bot, str, str], Awaitable[str | None]],
+) -> int:
+    """Digest'e kuyruklanan bildirimleri kullanıcı başına tek mesajda gönderir.
+
+    Best-effort: gönderim fail olsa bile loglar failed'a geçer (retry job bireysel dener).
+    Quiet hours aktifken kullanıcı atlanır, digest_pending kalır.
+    """
+    stmt = (
+        select(NotificationLog)
+        .where(NotificationLog.status == NotificationLogStatus.DIGEST_PENDING.value)
+        .limit(settings.notification_retry_batch_size * 5)
+    )
+    logs = list((await session.execute(stmt)).scalars().all())
+    if not logs:
+        return 0
+
+    by_user: dict[int, list[NotificationLog]] = {}
+    for log in logs:
+        by_user.setdefault(log.user_id, []).append(log)
+
+    notified = 0
+    now = now_in("UTC")
+    for user_id, user_logs in by_user.items():
+        user = await session.get(User, user_id, options=[selectinload(User.telegram_account)])
+        if user is None or user.telegram_account is None:
+            for log in user_logs:
+                log.status = NotificationLogStatus.ABANDONED.value
+                log.next_retry_at = None
+            continue
+
+        if (
+            user.quiet_hours_enabled
+            and user.quiet_hours_start is not None
+            and user.quiet_hours_end is not None
+        ):
+            local_now = now.astimezone(get_user_timezone(user.timezone))
+            if is_within_quiet_hours(local_now, user.quiet_hours_start, user.quiet_hours_end):
+                continue
+
+        text = await _format_digest(session, user_logs)
+        if text is None:
+            for log in user_logs:
+                log.status = NotificationLogStatus.ABANDONED.value
+                log.next_retry_at = None
+            continue
+
+        chat_id = user.telegram_account.telegram_user_id
+        sent = await send_fn(bot, chat_id, text)
+        for log in user_logs:
+            if sent is not None:
+                log.status = NotificationLogStatus.SENT.value
+                log.sent_at = now
+            else:
+                log.status = NotificationLogStatus.FAILED.value
+                log.next_retry_at = _compute_next_retry(0)
+        if sent is not None:
+            notified += 1
+
+    await session.commit()
+    return notified
+
+
+async def _format_digest(session: AsyncSession, logs: list[NotificationLog]) -> str | None:
+    items: list[str] = []
+    for log in logs:
+        if log.reminder_event_id is None:
+            continue
+        event = await session.get(ReminderEvent, log.reminder_event_id)
+        if event is None:
+            continue
+        bot_name = BOT_KEYS_TR[BotKey(event.bot_key)]
+        items.append(DIGEST_ITEM.format(bot_name=bot_name, label=event_label(event)))
+    if not items:
+        return None
+    return DIGEST_HEADER + "\n".join(items)
+
+
 __all__ = [
     "_compute_next_retry",
     "_format_abandoned",
+    "_format_digest",
     "log_notification",
     "notify_abandoned",
     "retry_failed_notifications",
+    "send_digest",
 ]

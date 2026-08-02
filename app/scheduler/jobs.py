@@ -3,12 +3,19 @@ from app.core.database import async_session_factory
 from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
-from app.models import NotificationLogStatus
+from app.models import BotKey, NotificationLogStatus
 from app.modules.registry import get_modules
 from app.services import notification_service, reminder_service
 from app.tgbot.notifier import send_plain_text, send_reminder
 
 logger = get_logger("scheduler.jobs")
+
+DIGEST_BOT_KEYS: set[BotKey] = {
+    BotKey.HABIT,
+    BotKey.SPORT,
+    BotKey.SUPPLEMENT,
+    BotKey.STEP,
+}
 
 _SUPPRESS_LOG_STATUSES: dict[str, str] = {
     "user_inactive": NotificationLogStatus.SUPPRESSED_USER_INACTIVE.value,
@@ -60,6 +67,20 @@ async def reminder_tick() -> None:
                     message=f"reminder {event.id}",
                     channel="telegram",
                     status=_SUPPRESS_LOG_STATUSES[decision["reason"]],
+                )
+                continue
+            if BotKey(event.bot_key) in DIGEST_BOT_KEYS:
+                notified = await reminder_service.mark_notified(session, event.id)
+                if not notified:
+                    logger.warning("reminder already handled", event_id=event.id)
+                    continue
+                await notification_service.log_notification(
+                    session,
+                    user_id=event.user_id,
+                    reminder_event_id=event.id,
+                    message=f"reminder {event.id}",
+                    channel="telegram",
+                    status=NotificationLogStatus.DIGEST_PENDING.value,
                 )
                 continue
             message_id = await send_reminder(bot, event)
@@ -125,3 +146,16 @@ async def abandoned_notification_job() -> None:
         notified = await notification_service.notify_abandoned(session, bot, send_plain_text)
     if notified:
         logger.info("abandoned notification sent", user_count=notified)
+
+
+async def notification_digest_job() -> None:
+    from app.scheduler.engine import get_bot
+
+    bot = get_bot()
+    if bot is None:
+        logger.warning("notification digest skipped, no bot instance")
+        return
+    async with async_session_factory() as session:
+        notified = await notification_service.send_digest(session, bot, send_plain_text)
+    if notified:
+        logger.info("notification digest sent", user_count=notified)
