@@ -12,6 +12,7 @@ from app.models import (
 from app.tgbot.callback_parser import (
     HabitAction,
     MedicationAction,
+    ReminderAction,
     ReportAction,
     SettingsAction,
     SportAction,
@@ -20,6 +21,7 @@ from app.tgbot.callback_parser import (
     UICallbackKind,
     format_habit_ui,
     format_medication_ui,
+    format_reminder,
     format_report_ui,
     format_settings_ui,
     format_sport_ui,
@@ -329,6 +331,21 @@ def medication_confirm() -> InlineKeyboardMarkup:
             ),
             InlineKeyboardButton(
                 "İptal ❌", callback_data=format_medication_ui(MedicationAction.CANCEL)
+            ),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def medication_response_buttons(event_id: int) -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "✅ Aldım", callback_data=format_reminder(event_id, ReminderAction.TAKEN)
+            ),
+            InlineKeyboardButton(
+                "❌ Almadım",
+                callback_data=format_reminder(event_id, ReminderAction.NOT_TAKEN),
             ),
         ]
     ]
