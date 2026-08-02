@@ -2,11 +2,22 @@ from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from app.core.database import async_session_factory
-from app.services import report_service
-from app.services.report_service import DailyReport, WeeklyReport
+from app.core.timezone import now_in
+from app.models import BotKey
+from app.services import report_service, settings_service
+from app.services.report_service import DailyReport, MonthlyReport, WeeklyReport
 from app.tgbot.callback_parser import ReportAction, UICallback
-from app.tgbot.keyboards import report_menu
+from app.tgbot.keyboards import monthly_report_nav, report_menu
 from app.tgbot.messages import (
+    BOT_ICONS,
+    BOT_KEYS_TR,
+    MONTHLY_REPORT_BOT_LINE,
+    MONTHLY_REPORT_EMPTY,
+    MONTHLY_REPORT_HEADER,
+    MONTHLY_REPORT_INVALID_ARG,
+    MONTHLY_REPORT_LEGEND,
+    MONTHLY_REPORT_OVERALL,
+    MONTHS_TR,
     REPORT_BEST_DAY,
     REPORT_COMPLETED_HEADER,
     REPORT_COMPLIANCE,
@@ -45,6 +56,22 @@ async def cmd_rapor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text(text, reply_markup=keyboard)
 
 
+async def cmd_monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.effective_message is not None
+    user_id = await _ensure_user_id(context, update)
+    args = context.args or []
+    if args:
+        parsed = _parse_month_arg(args)
+        if parsed is None:
+            await update.effective_message.reply_text(MONTHLY_REPORT_INVALID_ARG)
+            return
+        year, month = parsed
+    else:
+        year, month = await _current_year_month(user_id)
+    text, keyboard = await _monthly_payload(user_id, year, month)
+    await update.effective_message.reply_text(text, reply_markup=keyboard)
+
+
 async def show_report(
     update: Update, context: ContextTypes.DEFAULT_TYPE, parsed: UICallback
 ) -> None:
@@ -52,6 +79,12 @@ async def show_report(
     user_id = await _ensure_user_id(context, update)
     if parsed.report_action is ReportAction.WEEKLY:
         text, keyboard = await _weekly_payload(user_id)
+    elif parsed.report_action in (ReportAction.MONTHLY, ReportAction.MONTHLY_NAV):
+        if parsed.year is None or parsed.month is None:
+            year, month = await _current_year_month(user_id)
+        else:
+            year, month = parsed.year, parsed.month
+        text, keyboard = await _monthly_payload(user_id, year, month)
     else:
         text, keyboard = await _daily_payload(user_id)
     await update.callback_query.edit_message_text(text, reply_markup=keyboard)
@@ -68,6 +101,69 @@ async def _weekly_payload(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
     async with async_session_factory() as session:
         data = await report_service.generate_weekly_report(session, user_id)
     return _format_weekly(data), report_menu()
+
+
+async def _current_year_month(user_id: int) -> tuple[int, int]:
+    async with async_session_factory() as session:
+        user = await settings_service.get_settings(session, user_id)
+    now = now_in(user.timezone)
+    return now.year, now.month
+
+
+def _parse_month_arg(args: list[str]) -> tuple[int, int] | None:
+    if len(args) != 1:
+        return None
+    try:
+        year_str, month_str = args[0].split("-")
+        year = int(year_str)
+        month = int(month_str)
+    except ValueError:
+        return None
+    if year < 1 or not 1 <= month <= 12:
+        return None
+    return year, month
+
+
+async def _monthly_payload(user_id: int, year: int, month: int) -> tuple[str, InlineKeyboardMarkup]:
+    async with async_session_factory() as session:
+        report = await report_service.generate_monthly_report(session, user_id, year, month)
+    return _format_monthly_report(report), monthly_report_nav(year, month)
+
+
+def _format_monthly_report(report: MonthlyReport) -> str:
+    month_label = f"{MONTHS_TR[report.month - 1]} {report.year}"
+    if report.total == 0:
+        return MONTHLY_REPORT_EMPTY.format(month_label=month_label)
+    lines = [
+        MONTHLY_REPORT_HEADER.format(month_label=month_label),
+        "",
+        MONTHLY_REPORT_OVERALL.format(
+            rate=f"{report.completion_rate:.0f}",
+            completed=report.total_completed,
+            total=report.total,
+        ),
+        "",
+    ]
+    for stats in report.bot_stats:
+        bot_key = BotKey(stats.bot_key)
+        lines.append(
+            MONTHLY_REPORT_BOT_LINE.format(
+                icon=BOT_ICONS.get(bot_key, "📌"),
+                name=BOT_KEYS_TR[bot_key],
+                rate=f"{stats.completion_rate:.0f}",
+                completed=stats.completed,
+                total=stats.total,
+            )
+        )
+    lines.append("")
+    lines.append(
+        MONTHLY_REPORT_LEGEND.format(
+            completed=report.total_completed,
+            missed=report.total_missed,
+            pending=report.total_pending,
+        )
+    )
+    return "\n".join(lines)
 
 
 def _format_daily(data: DailyReport) -> str:
@@ -121,6 +217,7 @@ def _weekday_name(weekday: int | None) -> str:
 
 
 __all__ = [
+    "cmd_monthly_report",
     "cmd_rapor",
     "show_report",
 ]

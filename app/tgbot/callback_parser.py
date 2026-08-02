@@ -73,6 +73,8 @@ class MedicationAction(StrEnum):
 class ReportAction(StrEnum):
     DAILY = "daily"
     WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    MONTHLY_NAV = "nav"
 
 
 class SettingsAction(StrEnum):
@@ -106,6 +108,8 @@ class UICallback:
     medication_action: MedicationAction | None = None
     medication_plan_id: int | None = None
     report_action: ReportAction | None = None
+    year: int | None = None
+    month: int | None = None
     settings_action: SettingsAction | None = None
 
 
@@ -154,7 +158,12 @@ def format_medication_ui(action: MedicationAction, plan_id: int | None = None) -
     return f"{UI_PREFIX}{UICallbackKind.MEDICATION.value}:{action.value}:{plan_id}"
 
 
-def format_report_ui(action: ReportAction) -> str:
+def format_report_ui(
+    action: ReportAction, year: int | None = None, month: int | None = None
+) -> str:
+    if action in (ReportAction.MONTHLY, ReportAction.MONTHLY_NAV):
+        if year is not None and month is not None:
+            return f"{UI_PREFIX}{UICallbackKind.REPORTS.value}:{action.value}:{year}-{month:02d}"
     return f"{UI_PREFIX}{UICallbackKind.REPORTS.value}:{action.value}"
 
 
@@ -259,11 +268,25 @@ def parse_ui(data: str) -> UICallback | None:
             except ValueError:
                 return None
     report_action: ReportAction | None = None
+    year: int | None = None
+    month: int | None = None
     if kind is UICallbackKind.REPORTS:
         if len(parts) >= 2:
             try:
                 report_action = ReportAction(parts[1])
             except ValueError:
+                return None
+        if report_action in (ReportAction.MONTHLY, ReportAction.MONTHLY_NAV):
+            if len(parts) >= 3:
+                try:
+                    year_str, month_str = parts[2].split("-")
+                    year = int(year_str)
+                    month = int(month_str)
+                except ValueError:
+                    return None
+                if not 1 <= month <= 12:
+                    return None
+            elif report_action is ReportAction.MONTHLY_NAV:
                 return None
     settings_action: SettingsAction | None = None
     if kind is UICallbackKind.SETTINGS:
@@ -285,6 +308,8 @@ def parse_ui(data: str) -> UICallback | None:
         medication_action=medication_action,
         medication_plan_id=medication_plan_id,
         report_action=report_action,
+        year=year,
+        month=month,
         settings_action=settings_action,
     )
 

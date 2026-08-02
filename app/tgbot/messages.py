@@ -54,6 +54,7 @@ HELP = (
     "/ilac - İlaç takibi menüsünü aç\n"
     "/ayarlar - Ayarları göster\n"
     "/rapor - Raporları göster\n"
+    "/aylik_rapor - Aylık rapor göster\n"
     "/yardim - Bu yardım menüsü"
 )
 
@@ -102,6 +103,40 @@ REPORT_EMPTY = "Bu dönemde kayıtlı hatırlatma yok. 🕐"
 REPORT_COMPLIANCE = "Uyum oranı: %{rate}"
 REPORT_BEST_DAY = "En iyi gün: {day}"
 REPORT_WEAKEST_DAY = "En zayıf gün: {day}"
+
+MONTHLY_REPORT_HEADER = "📊 Aylık Rapor — {month_label}"
+MONTHLY_REPORT_EMPTY = "📊 {month_label}\n\nBu ay için henüz veri yok."
+MONTHLY_REPORT_OVERALL = "🎯 Genel Tamamlama: %{rate} ({completed}/{total})"
+MONTHLY_REPORT_BOT_LINE = "{icon} {name}: %{rate} ({completed}/{total})"
+MONTHLY_REPORT_LEGEND = (
+    "✅ Tamamlanan: {completed} | ❌ Kaçırılan: {missed} | ⏳ Bekleyen: {pending}"
+)
+MONTHLY_REPORT_INVALID_ARG = "❌ Geçersiz format. Kullanım: /aylik_rapor veya /aylik_rapor 2026-08"
+
+MONTHS_TR = [
+    "Ocak",
+    "Şubat",
+    "Mart",
+    "Nisan",
+    "Mayıs",
+    "Haziran",
+    "Temmuz",
+    "Ağustos",
+    "Eylül",
+    "Ekim",
+    "Kasım",
+    "Aralık",
+]
+
+BOT_ICONS: dict[BotKey, str] = {
+    BotKey.CORE: "📌",
+    BotKey.HABIT: "🔁",
+    BotKey.SPORT: "🏃",
+    BotKey.SUPPLEMENT: "💊",
+    BotKey.STEP: "🚶",
+    BotKey.ASSESSMENT: "🩺",
+    BotKey.MEDICATION: "💊",
+}
 
 WEEKDAY_NAMES_TR: dict[int, str] = {
     1: "Pazartesi",
@@ -361,5 +396,6 @@ COMMANDS = [
     ("ilac_listesi", "İlaç planlarını listele"),
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
+    ("aylik_rapor", "Aylık rapor göster"),
     ("yardim", "Yardım menüsü"),
 ]
