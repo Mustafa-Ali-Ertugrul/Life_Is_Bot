@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -22,3 +22,6 @@ class NotificationLog(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    abandoned_notified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )

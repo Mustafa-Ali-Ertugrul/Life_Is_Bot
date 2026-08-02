@@ -6,7 +6,7 @@ from app.core.timezone import now_in
 from app.models import NotificationLogStatus
 from app.modules.registry import get_modules
 from app.services import notification_service, reminder_service
-from app.tgbot.notifier import send_reminder
+from app.tgbot.notifier import send_plain_text, send_reminder
 
 logger = get_logger("scheduler.jobs")
 
@@ -112,3 +112,16 @@ async def notification_retry_job() -> None:
         )
     if processed:
         logger.info("notification retry done", count=processed)
+
+
+async def abandoned_notification_job() -> None:
+    from app.scheduler.engine import get_bot
+
+    bot = get_bot()
+    if bot is None:
+        logger.warning("abandoned notification skipped, no bot instance")
+        return
+    async with async_session_factory() as session:
+        notified = await notification_service.notify_abandoned(session, bot, send_plain_text)
+    if notified:
+        logger.info("abandoned notification sent", user_count=notified)
