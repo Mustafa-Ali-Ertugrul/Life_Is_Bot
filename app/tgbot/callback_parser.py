@@ -88,6 +88,8 @@ class ReminderAction(StrEnum):
     NOT_DONE = "n"
     SNOOZE = "s"
     SKIP = "x"
+    TAKEN = "t"
+    NOT_TAKEN = "f"
 
 
 @dataclass(frozen=True)

@@ -260,6 +260,16 @@ async def _handle_reminder_callback(
                     session, event.id, user_id, bot_key, ResponseType.SKIPPED
                 )
                 await query.edit_message_text("Atlandı ⏭️")
+            elif parsed.action is ReminderAction.TAKEN:
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.TAKEN
+                )
+                await query.edit_message_text("Aldım ✅")
+            elif parsed.action is ReminderAction.NOT_TAKEN:
+                await response_service.save_response(
+                    session, event.id, user_id, bot_key, ResponseType.NOT_TAKEN
+                )
+                await query.edit_message_text("Almadım ❌")
             elif parsed.action is ReminderAction.SNOOZE:
                 minutes = parsed.minutes or 10
                 await response_service.save_response(

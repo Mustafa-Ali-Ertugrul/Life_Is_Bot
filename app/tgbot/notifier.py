@@ -4,6 +4,7 @@ from app.core.logger import get_logger
 from app.models import BotKey, ReminderEvent
 from app.services.event_labels import event_label
 from app.tgbot.callback_parser import ReminderAction, format_reminder
+from app.tgbot.keyboards import medication_response_buttons
 from app.tgbot.messages import BOT_KEYS_TR
 
 logger = get_logger("telegram.notifier")
@@ -13,27 +14,30 @@ def build_reminder_message(event: ReminderEvent) -> tuple[str, InlineKeyboardMar
     bot_name = BOT_KEYS_TR[BotKey(event.bot_key)]
     label = event_label(event)
     text = f"{bot_name} hatırlatması: {label}"
-    keyboard = InlineKeyboardMarkup(
-        [
+    if BotKey(event.bot_key) is BotKey.MEDICATION:
+        keyboard = medication_response_buttons(event.id)
+    else:
+        keyboard = InlineKeyboardMarkup(
             [
-                InlineKeyboardButton(
-                    "✅", callback_data=format_reminder(event.id, ReminderAction.DONE)
-                ),
-                InlineKeyboardButton(
-                    "❌", callback_data=format_reminder(event.id, ReminderAction.NOT_DONE)
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    "⏰ 10 dk",
-                    callback_data=format_reminder(event.id, ReminderAction.SNOOZE, minutes=10),
-                ),
-                InlineKeyboardButton(
-                    "⏭️", callback_data=format_reminder(event.id, ReminderAction.SKIP)
-                ),
-            ],
-        ]
-    )
+                [
+                    InlineKeyboardButton(
+                        "✅", callback_data=format_reminder(event.id, ReminderAction.DONE)
+                    ),
+                    InlineKeyboardButton(
+                        "❌", callback_data=format_reminder(event.id, ReminderAction.NOT_DONE)
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "⏰ 10 dk",
+                        callback_data=format_reminder(event.id, ReminderAction.SNOOZE, minutes=10),
+                    ),
+                    InlineKeyboardButton(
+                        "⏭️", callback_data=format_reminder(event.id, ReminderAction.SKIP)
+                    ),
+                ],
+            ]
+        )
     return text, keyboard
 
 

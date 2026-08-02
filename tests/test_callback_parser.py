@@ -250,6 +250,30 @@ def test_parse_reminder_done() -> None:
     assert parsed.minutes is None
 
 
+def test_parse_reminder_taken() -> None:
+    parsed = parse_reminder("r:9001:t")
+
+    assert parsed is not None
+    assert parsed.action is ReminderAction.TAKEN
+
+
+def test_parse_reminder_not_taken() -> None:
+    parsed = parse_reminder("r:9001:f")
+
+    assert parsed is not None
+    assert parsed.action is ReminderAction.NOT_TAKEN
+
+
+def test_format_reminder_taken_roundtrip() -> None:
+    for action in (ReminderAction.TAKEN, ReminderAction.NOT_TAKEN):
+        data = format_reminder(123, action)
+        parsed = parse_reminder(data)
+
+        assert parsed is not None
+        assert parsed.event_id == 123
+        assert parsed.action is action
+
+
 def test_parse_reminder_snooze() -> None:
     parsed = parse_reminder("r:9001:s10")
 
