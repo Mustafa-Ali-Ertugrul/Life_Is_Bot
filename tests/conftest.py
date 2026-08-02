@@ -1,5 +1,10 @@
+import hashlib
+import hmac
+import json
+import time
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from urllib.parse import urlencode
 
 import pytest
 import pytest_asyncio
@@ -8,11 +13,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.api.deps import get_db
 from app.api.main import create_app
-from app.models import Base
+from app.models import Base, TelegramAccount, User
 from app.modules.registry import setup_default_modules
 
 TELEGRAM_USER_ID = "123456789"
 TELEGRAM_USER_ID_2 = "987654321"
+
+TEST_BOT_TOKEN = "123456:TEST-TOKEN"
+TEST_API_KEY = "test-api-key"
+TEST_TELEGRAM_USER_ID = 777000
+
+
+def make_init_data(telegram_user_id: int | None = None, *, auth_date: int | None = None) -> str:
+    """Build a signed Telegram WebApp initData query string for tests."""
+    params: dict[str, str] = {}
+    if telegram_user_id is not None:
+        user = json.dumps({"id": telegram_user_id, "first_name": "Test"}, separators=(",", ":"))
+        params["user"] = user
+    params["auth_date"] = str(auth_date if auth_date is not None else int(time.time()))
+    check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
+    secret_key = hmac.new(b"WebAppData", TEST_BOT_TOKEN.encode(), hashlib.sha256).digest()
+    params["hash"] = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    return urlencode(params)
 
 
 @asynccontextmanager
@@ -61,3 +83,25 @@ async def api_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def api_user(db_session: AsyncSession) -> User:
+    user = User(name="api-test", consent_given=True, is_active=True)
+    db_session.add(user)
+    await db_session.flush()
+    db_session.add(TelegramAccount(user_id=user.id, telegram_user_id=str(TEST_TELEGRAM_USER_ID)))
+    await db_session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
+async def auth_headers(monkeypatch: pytest.MonkeyPatch, api_user: User) -> dict[str, str]:
+    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
+    return {"Authorization": f"Bearer {make_init_data(TEST_TELEGRAM_USER_ID)}"}
+
+
+@pytest_asyncio.fixture
+async def api_key_headers(monkeypatch: pytest.MonkeyPatch, api_user: User) -> dict[str, str]:
+    monkeypatch.setattr("app.api.auth.settings.api_key", TEST_API_KEY)
+    return {"X-API-Key": TEST_API_KEY}
