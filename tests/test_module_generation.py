@@ -3,8 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.timezone import now_in
 from app.modules.habit import HabitModule
 from app.modules.sport import SportModule
+from app.modules.step import StepModule
 from app.modules.supplement import SupplementModule
-from app.services import habit_service, sport_service, supplement_service, user_service
+from app.services import (
+    habit_service,
+    sport_service,
+    step_service,
+    supplement_service,
+    user_service,
+)
 from tests.conftest import TELEGRAM_USER_ID, TELEGRAM_USER_ID_2
 
 
@@ -50,6 +57,15 @@ async def test_supplement_module_generates_for_all_active_users(
     )
 
     created = await SupplementModule().generate_daily_events_for_all(db_session)
+
+    assert created >= 1
+
+
+async def test_step_module_generates_for_all_active_users(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    await step_service.get_or_create_settings(db_session, user_id)
+
+    created = await StepModule().generate_daily_events_for_all(db_session)
 
     assert created >= 1
 

@@ -8,17 +8,19 @@ from app.modules.registry import (
     setup_default_modules,
 )
 from app.modules.sport import SportModule
+from app.modules.step import StepModule
 from app.modules.supplement import SupplementModule
 
 
-def test_setup_default_modules_registers_habit_sport_and_supplement() -> None:
+def test_setup_default_modules_registers_habit_sport_supplement_and_step() -> None:
     setup_default_modules()
 
     modules = get_modules()
-    assert len(modules) == 3
+    assert len(modules) == 4
     assert isinstance(modules[0], HabitModule)
     assert isinstance(modules[1], SportModule)
     assert isinstance(modules[2], SupplementModule)
+    assert isinstance(modules[3], StepModule)
 
 
 def test_get_module_by_bot_key_habit() -> None:
@@ -39,6 +41,12 @@ def test_get_module_by_bot_key_supplement() -> None:
     assert isinstance(get_module_by_bot_key(BotKey.SUPPLEMENT), SupplementModule)
 
 
+def test_get_module_by_bot_key_step() -> None:
+    setup_default_modules()
+
+    assert isinstance(get_module_by_bot_key(BotKey.STEP), StepModule)
+
+
 def test_get_module_by_related_type_habit() -> None:
     setup_default_modules()
 
@@ -57,6 +65,12 @@ def test_get_module_by_related_type_supplement() -> None:
     assert isinstance(get_module_by_related_type("supplement_plan"), SupplementModule)
 
 
+def test_get_module_by_related_type_step_goal() -> None:
+    setup_default_modules()
+
+    assert isinstance(get_module_by_related_type("step_goal"), StepModule)
+
+
 def test_get_module_by_related_type_none() -> None:
     setup_default_modules()
 
@@ -72,11 +86,11 @@ def test_get_module_by_related_type_unknown() -> None:
 def test_get_module_by_bot_key_unregistered() -> None:
     setup_default_modules()
 
-    assert get_module_by_bot_key(BotKey.STEP) is None
+    assert get_module_by_bot_key(BotKey.ASSESSMENT) is None
 
 
 def test_register_module_manual_registration() -> None:
     setup_default_modules()
     register_module(HabitModule())
 
-    assert len(get_modules()) == 4
+    assert len(get_modules()) == 5
