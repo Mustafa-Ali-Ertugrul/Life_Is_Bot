@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +27,24 @@ async def is_enabled(session: AsyncSession, user_id: int, bot_key: BotKey) -> bo
     if preference is None:
         return bot_key is BotKey.CORE
     return preference.enabled
+
+
+async def get_enabled_map(
+    session: AsyncSession,
+    user_ids: Sequence[int],
+    bot_keys: Sequence[BotKey] | None = None,
+) -> dict[tuple[int, str], bool]:
+    """Kullanıcı-bot çiftleri için enabled durumlarını tek sorguda döndürür."""
+    statement = select(BotPreference).where(BotPreference.user_id.in_(user_ids))
+    if bot_keys is not None:
+        statement = statement.where(
+            BotPreference.bot_key.in_([bot_key.value for bot_key in bot_keys])
+        )
+    result = await session.execute(statement)
+    return {
+        (preference.user_id, preference.bot_key): preference.enabled
+        for preference in result.scalars().all()
+    }
 
 
 async def get_or_create_preference(

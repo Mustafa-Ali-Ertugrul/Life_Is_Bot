@@ -18,6 +18,7 @@ from app.services import preference_service
 class EventGenerationContext:
     user: User
     now_utc: datetime
+    enabled_bots: frozenset[str] | None = None
 
 
 class ReminderModule(ABC):
@@ -66,6 +67,8 @@ class ReminderModule(ABC):
         context: EventGenerationContext,
     ) -> bool:
         """Kullanıcı bu modül için preference açık mı? Default: preference gating."""
+        if context.enabled_bots is not None:
+            return self.bot_key.value in context.enabled_bots
         return await preference_service.is_enabled(session, context.user.id, self.bot_key)
 
     @abstractmethod

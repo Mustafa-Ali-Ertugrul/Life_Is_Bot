@@ -62,6 +62,11 @@ async def find_or_create_by_telegram_id(
     return refreshed
 
 
+async def list_active_users(session: AsyncSession) -> list[User]:
+    result = await session.execute(select(User).where(User.is_active.is_(True)))
+    return list(result.scalars().all())
+
+
 async def count_active_users(session: AsyncSession) -> int:
     result = await session.execute(
         select(func.count()).select_from(User).where(User.is_active.is_(True))
