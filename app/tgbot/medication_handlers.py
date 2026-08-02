@@ -11,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.schedule import format_days, parse_days, parse_time, parse_user_days
 from app.core.supplement import (
     format_duration_range,
@@ -177,7 +177,7 @@ async def medication_list_command(update: Update, context: ContextTypes.DEFAULT_
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await medication_service.list_medication_plans(session, user_id)
 
     if not plans:
@@ -207,7 +207,7 @@ async def medication_list_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await medication_service.list_medication_plans(session, user_id)
 
     if not plans:
@@ -232,7 +232,7 @@ async def medication_detail_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await medication_service.get_medication_plan(session, parsed.medication_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(MED_NOT_FOUND)
@@ -256,7 +256,7 @@ async def medication_toggle_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await medication_service.get_medication_plan(session, parsed.medication_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(MED_NOT_FOUND)
@@ -366,7 +366,7 @@ async def medication_ask_duration(update: Update, context: ContextTypes.DEFAULT_
             from app.tgbot.callbacks import _ensure_user
 
             user_id = await _ensure_user(context, update)
-        async with async_session_factory() as session:
+        async with unit_of_work() as session:
             user = await settings_service.get_settings(session, user_id)
         start_date = now_in(user.timezone).date()
         end_date = start_date + timedelta(days=duration_days - 1)
@@ -416,7 +416,7 @@ async def medication_confirm_callback(update: Update, context: ContextTypes.DEFA
     notes = data.get("med_draft_notes")
     notes_value = str(notes) if notes else None
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await medication_service.create_medication_plan(
             session,
             user_id,

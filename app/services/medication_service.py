@@ -61,7 +61,7 @@ async def create_medication_plan(
         notes=notes.strip() if notes else None,
     )
     session.add(plan)
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     await preference_service.toggle_preference(session, user_id, BotKey.MEDICATION, enabled=True)
     return plan
@@ -139,7 +139,7 @@ async def update_medication_plan(
     ):
         raise InvalidStateError("start_date must not be after end_date")
 
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     return plan
 
@@ -151,7 +151,7 @@ async def toggle_medication_plan(
     if plan is None:
         raise NotFoundError(f"MedicationPlan {plan_id} not found")
     plan.is_active = is_active
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     return plan
 

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
@@ -62,8 +63,8 @@ async def user_id(db_session: AsyncSession) -> int:
 
 
 @pytest.fixture
-def session_factory_patch(monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession) -> None:
-    monkeypatch.setattr(medication_handlers, "async_session_factory", lambda: db_session)
+def session_factory_patch(patch_uow: Callable[[object], None]) -> None:
+    patch_uow(medication_handlers)
 
 
 async def test_flow_full_conversation_creates_plan(
