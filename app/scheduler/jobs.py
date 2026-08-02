@@ -1,7 +1,7 @@
 from itertools import batched
 
 from app.core.config import settings
-from app.core.database import async_session_factory
+from app.core.database import async_session_factory, unit_of_work
 from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
@@ -158,7 +158,7 @@ async def notification_retry_job() -> None:
     if bot is None:
         logger.warning("notification retry skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         processed = await notification_service.retry_failed_notifications(
             session, bot, send_reminder
         )
@@ -173,7 +173,7 @@ async def abandoned_notification_job() -> None:
     if bot is None:
         logger.warning("abandoned notification skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         notified = await notification_service.notify_abandoned(session, bot, send_plain_text)
     if notified:
         logger.info("abandoned notification sent", user_count=notified)
@@ -186,7 +186,7 @@ async def notification_digest_job() -> None:
     if bot is None:
         logger.warning("notification digest skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         notified = await notification_service.send_digest(session, bot, send_plain_text)
     if notified:
         logger.info("notification digest sent", user_count=notified)

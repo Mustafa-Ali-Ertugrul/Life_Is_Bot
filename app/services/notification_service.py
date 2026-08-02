@@ -37,7 +37,7 @@ async def log_notification(
         sent_at=now_in("UTC"),
     )
     session.add(log)
-    await session.commit()
+    await session.flush()
     await session.refresh(log)
     return log
 
@@ -96,7 +96,7 @@ async def retry_failed_notifications(
                 log.next_retry_at = next_retry
         processed += 1
 
-    await session.commit()
+    await session.flush()
     return processed
 
 
@@ -141,7 +141,7 @@ async def notify_abandoned(
         if sent is not None:
             notified += 1
 
-    await session.commit()
+    await session.flush()
     return notified
 
 
@@ -223,7 +223,7 @@ async def send_digest(
         if sent is not None:
             notified += 1
 
-    await session.commit()
+    await session.flush()
     return notified
 
 
