@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.bot_preference import BotPreference
     from app.models.habit import Habit
     from app.models.medication_plan import MedicationPlan
+    from app.models.onboarding_answer import OnboardingAnswer
     from app.models.reminder_event import ReminderEvent
     from app.models.sport_plan import SportPlan
     from app.models.step_log import StepLog
@@ -47,6 +48,12 @@ class User(Base, TimestampMixin):
     quiet_hours_end: Mapped[str | None] = mapped_column(String(5))
     week_start_day: Mapped[int] = mapped_column(Integer, default=1)
 
+    profile_type: Mapped[str | None] = mapped_column(String(20))
+    onboarding_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    onboarding_skipped: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0")
+    )
+
     telegram_account: Mapped["TelegramAccount | None"] = relationship(
         back_populates="user", uselist=False
     )
@@ -74,5 +81,8 @@ class User(Base, TimestampMixin):
         uselist=False,
     )
     step_logs: Mapped[list["StepLog"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    onboarding_answers: Mapped[list["OnboardingAnswer"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )

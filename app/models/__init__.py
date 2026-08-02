@@ -13,6 +13,7 @@ from app.models.enums import (
 from app.models.habit import Habit
 from app.models.medication_plan import MedicationPlan
 from app.models.notification_log import NotificationLog
+from app.models.onboarding_answer import OnboardingAnswer
 from app.models.reminder_event import ReminderEvent
 from app.models.sport_plan import SportPlan
 from app.models.step_log import StepLog
@@ -33,6 +34,7 @@ __all__ = [
     "MedicationPlan",
     "NotificationLog",
     "NotificationLogStatus",
+    "OnboardingAnswer",
     "ReminderEvent",
     "ReminderStatus",
     "ResponseType",
