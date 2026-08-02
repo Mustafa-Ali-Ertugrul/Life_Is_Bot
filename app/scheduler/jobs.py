@@ -97,3 +97,18 @@ async def daily_events_job() -> None:
             created = await module.generate_daily_events_for_all(session, now_utc=now)
             total += created
     logger.info("daily events job done", created_count=total)
+
+
+async def notification_retry_job() -> None:
+    from app.scheduler.engine import get_bot
+
+    bot = get_bot()
+    if bot is None:
+        logger.warning("notification retry skipped, no bot instance")
+        return
+    async with async_session_factory() as session:
+        processed = await notification_service.retry_failed_notifications(
+            session, bot, send_reminder
+        )
+    if processed:
+        logger.info("notification retry done", count=processed)

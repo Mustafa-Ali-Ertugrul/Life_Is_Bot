@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[impo
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.scheduler.engine import set_scheduler
-from app.scheduler.jobs import daily_events_job, reminder_tick
+from app.scheduler.jobs import daily_events_job, notification_retry_job, reminder_tick
 
 logger = get_logger("scheduler.setup")
 
@@ -36,6 +36,13 @@ def setup_scheduler() -> AsyncIOScheduler:
         hour=0,
         minute=5,
         id="daily_events",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        notification_retry_job,
+        trigger="interval",
+        minutes=5,
+        id="notification_retry",
         replace_existing=True,
     )
 
