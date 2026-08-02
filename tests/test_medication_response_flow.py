@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Any
@@ -39,8 +40,8 @@ async def user_id(db_session: AsyncSession) -> int:
 
 
 @pytest.fixture
-def session_factory_patch(monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession) -> None:
-    monkeypatch.setattr(callbacks, "async_session_factory", lambda: db_session)
+def session_factory_patch(patch_uow: Callable[[object], None]) -> None:
+    patch_uow(callbacks)
 
 
 async def _medication_event(db_session: AsyncSession, user_id: int) -> ReminderEvent:

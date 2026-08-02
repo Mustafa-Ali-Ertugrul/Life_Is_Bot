@@ -27,14 +27,14 @@ async def update_timezone(session: AsyncSession, user_id: int, timezone_name: st
         raise InvalidStateError("Geçersiz timezone. IANA adı kullan (örn: Europe/Istanbul).")
     user = await get_settings(session, user_id)
     user.timezone = timezone_name
-    await session.commit()
+    await session.flush()
     return user
 
 
 async def toggle_notifications(session: AsyncSession, user_id: int) -> bool:
     user = await get_settings(session, user_id)
     user.notifications_enabled = not user.notifications_enabled
-    await session.commit()
+    await session.flush()
     return user.notifications_enabled
 
 
@@ -45,7 +45,7 @@ async def set_quiet_hours(session: AsyncSession, user_id: int, start: str, end: 
     user.quiet_hours_start = start
     user.quiet_hours_end = end
     user.quiet_hours_enabled = True
-    await session.commit()
+    await session.flush()
     return user
 
 
@@ -54,7 +54,7 @@ async def clear_quiet_hours(session: AsyncSession, user_id: int) -> User:
     user.quiet_hours_start = None
     user.quiet_hours_end = None
     user.quiet_hours_enabled = False
-    await session.commit()
+    await session.flush()
     return user
 
 

@@ -61,7 +61,7 @@ async def get_or_create_preference(
         settings_json="{}",
     )
     session.add(preference)
-    await session.commit()
+    await session.flush()
     await session.refresh(preference)
     return preference
 
@@ -84,6 +84,6 @@ async def toggle_preference(
     preference = await get_or_create_preference(session, user_id, bot_key)
     preference.enabled = enabled
     preference.updated_at = now_in("UTC")
-    await session.commit()
+    await session.flush()
     await session.refresh(preference)
     return preference
