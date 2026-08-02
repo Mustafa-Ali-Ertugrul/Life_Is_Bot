@@ -16,6 +16,11 @@ from app.tgbot.callbacks import handle_callback
 from app.tgbot.commands import cmd_botlar, cmd_start, cmd_yardim
 from app.tgbot.error_handler import handle_error
 from app.tgbot.habit_handlers import cmd_rutin, habit_conversation
+from app.tgbot.medication_handlers import (
+    medication_conversation,
+    medication_list_command,
+    medication_menu_command,
+)
 from app.tgbot.messages import COMMANDS
 from app.tgbot.report_handlers import cmd_rapor
 from app.tgbot.settings_handlers import cmd_ayarlar, settings_conversation
@@ -58,12 +63,15 @@ def build_application() -> ApplicationT:
     application.add_handler(sport_conversation())
     application.add_handler(supplement_conversation())
     application.add_handler(step_conversation())
+    application.add_handler(medication_conversation())
     application.add_handler(CommandHandler("rutin", cmd_rutin))
     application.add_handler(CommandHandler("spor", sport_menu_command))
     application.add_handler(CommandHandler("spor_listesi", sport_list_command))
     application.add_handler(CommandHandler("supplement", supplement_menu_command))
     application.add_handler(CommandHandler("supplement_listesi", supplement_list_command))
     application.add_handler(CommandHandler("adim", step_menu_command))
+    application.add_handler(CommandHandler("ilac", medication_menu_command))
+    application.add_handler(CommandHandler("ilac_listesi", medication_list_command))
     application.add_handler(CallbackQueryHandler(handle_callback))
     application.add_error_handler(handle_error)
 

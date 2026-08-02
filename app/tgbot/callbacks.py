@@ -11,6 +11,7 @@ from app.models import BotKey, ResponseType
 from app.services import preference_service, reminder_service, response_service, user_service
 from app.tgbot.callback_parser import (
     HabitAction,
+    MedicationAction,
     ReminderAction,
     ReminderCallback,
     SportAction,
@@ -22,6 +23,12 @@ from app.tgbot.callback_parser import (
 )
 from app.tgbot.habit_handlers import show_habit_detail, show_habit_list, toggle_habit
 from app.tgbot.keyboards import bot_detail, bot_list, main_menu
+from app.tgbot.medication_handlers import (
+    medication_detail_callback,
+    medication_list_callback,
+    medication_menu_callback,
+    medication_toggle_callback,
+)
 from app.tgbot.messages import (
     BOT_ACTIVATED,
     BOT_DEACTIVATED,
@@ -167,6 +174,22 @@ async def _handle_ui_callback(
             return
         if parsed.step_action is StepAction.TOGGLE:
             await step_toggle_callback(update, context, parsed)
+            return
+        await query.answer("Geçersiz istek")
+        return
+
+    if parsed.kind is UICallbackKind.MEDICATION:
+        if parsed.medication_action is MedicationAction.MENU:
+            await medication_menu_callback(update, context, parsed)
+            return
+        if parsed.medication_action is MedicationAction.LIST:
+            await medication_list_callback(update, context, parsed)
+            return
+        if parsed.medication_action is MedicationAction.DETAIL:
+            await medication_detail_callback(update, context, parsed)
+            return
+        if parsed.medication_action is MedicationAction.TOGGLE:
+            await medication_toggle_callback(update, context, parsed)
             return
         await query.answer("Geçersiz istek")
         return

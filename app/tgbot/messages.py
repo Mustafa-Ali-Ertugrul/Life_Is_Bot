@@ -51,6 +51,7 @@ HELP = (
     "/spor_listesi - Spor planlarını listele\n"
     "/adim - Adım takibi menüsünü aç\n"
     "/adim_gir - Bugünkü adımını gir\n"
+    "/ilac - İlaç takibi menüsünü aç\n"
     "/ayarlar - Ayarları göster\n"
     "/rapor - Raporları göster\n"
     "/yardim - Bu yardım menüsü"
@@ -280,6 +281,58 @@ STEP_TOGGLED_OFF = "⏸️ Adım takibi pasif edildi."
 STEP_CANCELLED = "❌ İşlem iptal edildi."
 STEP_FIRST_ACTIVATION = "🚶 Adım takibi aktif edildi! /adim ile menüye ulaşabilirsin."
 
+MED_MENU = "İlaç botu\n\nİlaç planlarını buradan yönetebilirsin.\n\nNe yapmak istersin?"
+MED_LIST_HEADER = "İlaç planların:\n\n{BOT_LIST}\n\nBir plan seç veya yenisini ekle:"
+MED_LIST_ITEM = "{status} {name}"
+MED_LIST_ITEM_ACTIVE = "✅"
+MED_LIST_ITEM_INACTIVE = "⬜"
+MED_LIST_EMPTY = (
+    "Henüz ilaç planın yok.\n\nYeni plan eklemek için /ilac_ekle komutunu kullanabilirsin."
+)
+MED_ASK_NAME = "İlaç adını yaz.\n\nÖrnek:\nMetformin\nVitamin D\nTansiyon ilacı"
+MED_ASK_DOSE = (
+    "Doz bilgisini yaz.\n\nÖrnek:\n1 tablet\n500 mg\n1 ölçek\n\n"
+    'Doz belirtmek istemiyorsan "yok" yaz.'
+)
+MED_ASK_WITH_FOOD = "Nasıl kullanacaksın?\n\nAç karnına\nTok karnına\nFark etmez"
+MED_ASK_DAYS = "Hangi günler?\n\nÖrnek:\nHer gün\nPazartesi, Çarşamba, Cuma\n1,3,5"
+MED_ASK_TIME = "Saat kaçta?\n\nÖrnek:\n08:00\n21:30"
+MED_ASK_DURATION = "Bu ilaç kaç gün sürecek?\n\nSüresiz ise 0 yaz.\n\nÖrnek:\n0\n14\n30"
+MED_ASK_NOTES = (
+    'Ek not var mı? (opsiyonel)\n\nÖrnek:\nAç karnına, bol su ile\n\nNot yoksa "yok" yaz.'
+)
+MED_CONFIRM = "İlaç planı eklensin mi?"
+MED_CREATED = "İlaç planın eklendi. ✅"
+MED_CANCELLED = "İlaç planı ekleme iptal edildi."
+MED_INVALID_NAME = "Geçersiz ilaç adı. Lütfen bir isim yaz."
+MED_INVALID_WITH_FOOD = (
+    "Kullanım şeklini anlayamadım.\n\n"
+    "Lütfen şunlardan birini yaz:\n"
+    "Aç karnına\n"
+    "Tok karnına\n"
+    "Fark etmez"
+)
+MED_INVALID_DAYS = "Günleri anlayamadım. Örnek: Her gün veya Pazartesi, Çarşamba, Cuma"
+MED_INVALID_TIME = "Saati anlayamadım. Örnek: 08:00"
+MED_INVALID_DURATION = "Süreyi anlayamadım. Örnek: 0, 14, 30"
+MED_DETAIL = (
+    "İlaç planı\n\n"
+    "Ad: {name}\n"
+    "Doz: {dose}\n"
+    "Kullanım: {with_food}\n"
+    "Günler: {days}\n"
+    "Saat: {time}\n"
+    "Süre: {duration}\n"
+    "Not: {notes}\n"
+    "Durum: {status}"
+)
+MED_STATUS_ACTIVE = "Aktif"
+MED_STATUS_INACTIVE = "Kapalı"
+MED_TOGGLED_ON = "İlaç planı aktif edildi. ✅"
+MED_TOGGLED_OFF = "İlaç planı pasif edildi."
+MED_NOT_FOUND = "İlaç planı bulunamadı."
+MED_DAYS_TR: dict[int, str] = HABIT_DAYS_TR
+
 BOT_KEYS_TR: dict[BotKey, str] = {
     BotKey.CORE: "Genel Rutin",
     BotKey.HABIT: "Rutin",
@@ -303,6 +356,9 @@ COMMANDS = [
     ("supplement_listesi", "Supplement planlarını listele"),
     ("adim", "Adım takibi menüsü"),
     ("adim_gir", "Bugünkü adımını gir"),
+    ("ilac", "İlaç takibi menüsünü aç"),
+    ("ilac_ekle", "Yeni ilaç planı ekle"),
+    ("ilac_listesi", "İlaç planlarını listele"),
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
     ("yardim", "Yardım menüsü"),
