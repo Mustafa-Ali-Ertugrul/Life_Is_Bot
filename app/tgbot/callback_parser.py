@@ -12,6 +12,7 @@ class UICallbackKind(StrEnum):
     HABIT = "habit"
     SPORT = "sport"
     SUPPLEMENT = "supplement"
+    STEP = "step"
     SETTINGS = "settings"
     REPORTS = "reports"
     HELP = "help"
@@ -48,6 +49,16 @@ class SupplementAction(StrEnum):
     CANCEL = "cancel"
 
 
+class StepAction(StrEnum):
+    MENU = "menu"
+    SETTINGS = "settings"
+    LOG = "log"
+    TOGGLE = "toggle"
+    GOAL = "goal"
+    TIME = "time"
+    DAYS = "days"
+
+
 class ReportAction(StrEnum):
     DAILY = "daily"
     WEEKLY = "weekly"
@@ -78,6 +89,7 @@ class UICallback:
     sport_plan_id: int | None = None
     supplement_action: SupplementAction | None = None
     supplement_plan_id: int | None = None
+    step_action: StepAction | None = None
     report_action: ReportAction | None = None
     settings_action: SettingsAction | None = None
 
@@ -115,6 +127,10 @@ def format_supplement_ui(action: SupplementAction, supplement_plan_id: int | Non
     if supplement_plan_id is None:
         return f"{UI_PREFIX}{UICallbackKind.SUPPLEMENT.value}:{action.value}"
     return f"{UI_PREFIX}{UICallbackKind.SUPPLEMENT.value}:{action.value}:{supplement_plan_id}"
+
+
+def format_step_ui(action: StepAction) -> str:
+    return f"{UI_PREFIX}{UICallbackKind.STEP.value}:{action.value}"
 
 
 def format_report_ui(action: ReportAction) -> str:
@@ -197,6 +213,14 @@ def parse_ui(data: str) -> UICallback | None:
                 supplement_plan_id = int(parts[2])
             except ValueError:
                 return None
+    step_action: StepAction | None = None
+    if kind is UICallbackKind.STEP:
+        if len(parts) < 2:
+            return None
+        try:
+            step_action = StepAction(parts[1])
+        except ValueError:
+            return None
     report_action: ReportAction | None = None
     if kind is UICallbackKind.REPORTS:
         if len(parts) >= 2:
@@ -220,6 +244,7 @@ def parse_ui(data: str) -> UICallback | None:
         sport_plan_id=sport_plan_id,
         supplement_action=supplement_action,
         supplement_plan_id=supplement_plan_id,
+        step_action=step_action,
         report_action=report_action,
         settings_action=settings_action,
     )
