@@ -9,6 +9,7 @@ from app.scheduler.engine import set_scheduler
 from app.scheduler.jobs import (
     abandoned_notification_job,
     daily_events_job,
+    notification_digest_job,
     notification_retry_job,
     reminder_tick,
 )
@@ -55,6 +56,13 @@ def setup_scheduler() -> AsyncIOScheduler:
         trigger="interval",
         minutes=30,
         id="abandoned_notification",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        notification_digest_job,
+        trigger="interval",
+        minutes=5,
+        id="notification_digest",
         replace_existing=True,
     )
 
