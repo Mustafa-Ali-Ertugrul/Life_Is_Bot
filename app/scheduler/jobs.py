@@ -1,11 +1,19 @@
+from itertools import batched
+
 from app.core.config import settings
 from app.core.database import async_session_factory
 from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
 from app.models import BotKey, NotificationLogStatus
+from app.modules.base import EventGenerationContext
 from app.modules.registry import get_modules
-from app.services import notification_service, reminder_service
+from app.services import (
+    notification_service,
+    preference_service,
+    reminder_service,
+    user_service,
+)
 from app.tgbot.notifier import send_plain_text, send_reminder
 
 logger = get_logger("scheduler.jobs")
@@ -16,6 +24,8 @@ DIGEST_BOT_KEYS: set[BotKey] = {
     BotKey.SUPPLEMENT,
     BotKey.STEP,
 }
+
+BATCH_SIZE = 100
 
 _SUPPRESS_LOG_STATUSES: dict[str, str] = {
     "user_inactive": NotificationLogStatus.SUPPRESSED_USER_INACTIVE.value,
@@ -113,10 +123,26 @@ async def reminder_tick() -> None:
 async def daily_events_job() -> None:
     total = 0
     now = now_in("UTC")
+    modules = get_modules()
+    bot_keys = [module.bot_key for module in modules]
     async with async_session_factory() as session:
-        for module in get_modules():
-            created = await module.generate_daily_events_for_all(session, now_utc=now)
-            total += created
+        users = await user_service.list_active_users(session)
+        for user_batch in batched(users, BATCH_SIZE):
+            enabled_map = await preference_service.get_enabled_map(
+                session, [user.id for user in user_batch], bot_keys
+            )
+            for user in user_batch:
+                enabled_bots = frozenset(
+                    bot_key
+                    for (user_id, bot_key), enabled in enabled_map.items()
+                    if user_id == user.id and enabled
+                )
+                context = EventGenerationContext(user=user, now_utc=now, enabled_bots=enabled_bots)
+                for module in modules:
+                    if not await module.should_generate(session, context):
+                        continue
+                    events = await module.generate_daily_events(session, context)
+                    total += len(events)
     logger.info("daily events job done", created_count=total)
 
 
