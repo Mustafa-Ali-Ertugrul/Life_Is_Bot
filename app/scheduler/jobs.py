@@ -1,3 +1,4 @@
+from datetime import timedelta
 from itertools import batched
 
 from app.core.config import settings
@@ -9,11 +10,14 @@ from app.models import BotKey, NotificationLogStatus
 from app.modules.base import EventGenerationContext
 from app.modules.registry import get_modules
 from app.services import (
+    backup_service,
     notification_service,
     preference_service,
     reminder_service,
+    report_service,
     user_service,
 )
+from app.tgbot.messages import BOT_KEYS_TR
 from app.tgbot.notifier import send_plain_text, send_reminder
 
 logger = get_logger("scheduler.jobs")
@@ -190,3 +194,62 @@ async def notification_digest_job() -> None:
         notified = await notification_service.send_digest(session, bot, send_plain_text)
     if notified:
         logger.info("notification digest sent", user_count=notified)
+
+
+async def daily_backup_job() -> None:
+    """Nightly: create a SQLite backup and clean up backups older than retention."""
+    if not settings.backup_enabled:
+        return
+    async with unit_of_work() as session:
+        await backup_service.create_daily_backup(session)
+    await backup_service.cleanup_old_backups()
+
+
+async def monthly_report_job() -> None:
+    """End of month: generate report for all users, save file, send via Telegram."""
+    from app.scheduler.engine import get_bot
+
+    if not settings.auto_monthly_report:
+        return
+
+    today = now_in(settings.timezone).date()
+    if (today + timedelta(days=1)).month == today.month:
+        return  # Son gün değil
+
+    bot = get_bot()
+    year, month = today.year, today.month
+    async with unit_of_work() as session:
+        users = await user_service.list_active_users_eager(session)
+        for user in users:
+            report = await report_service.generate_monthly_report(session, user.id, year, month)
+            content = format_report_markdown(report)
+            await backup_service.save_monthly_report_file(content, year, month, user.id)
+
+            account = user.telegram_account
+            if bot is not None and account is not None:
+                sent = await send_plain_text(bot, account.telegram_user_id, content)
+                if sent is None:
+                    logger.warning("monthly report send failed", user_id=user.id)
+
+
+def format_report_markdown(report: report_service.MonthlyReport) -> str:
+    """Format MonthlyReport as plain text/markdown."""
+    lines = [
+        f"# Aylık Rapor — {report.year}-{report.month:02d}",
+        "",
+        f"Genel tamamlama: {report.completion_rate}% ({report.total_completed}/{report.total})",
+        "",
+    ]
+    for stats in report.bot_stats:
+        name = BOT_KEYS_TR[BotKey(stats.bot_key)]
+        lines.append(
+            f"- {name}: {stats.completion_rate}% "
+            f"({stats.completed}/{stats.total}, kaçırılan {stats.missed}, "
+            f"ertelenen {stats.snoozed}, bekleyen {stats.pending})"
+        )
+    lines += [
+        "",
+        f"Tamamlanan {report.total_completed} | Kaçırılan {report.total_missed} | "
+        f"Bekleyen {report.total_pending}",
+    ]
+    return "\n".join(lines)

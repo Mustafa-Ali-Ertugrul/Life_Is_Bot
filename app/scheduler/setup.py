@@ -8,7 +8,9 @@ from app.core.logger import get_logger
 from app.scheduler.engine import set_scheduler
 from app.scheduler.jobs import (
     abandoned_notification_job,
+    daily_backup_job,
     daily_events_job,
+    monthly_report_job,
     notification_digest_job,
     notification_retry_job,
     reminder_tick,
@@ -42,6 +44,22 @@ def setup_scheduler() -> AsyncIOScheduler:
         hour=0,
         minute=5,
         id="daily_events",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        daily_backup_job,
+        trigger="cron",
+        hour=0,
+        minute=1,
+        id="daily_backup",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        monthly_report_job,
+        trigger="cron",
+        hour=23,
+        minute=50,
+        id="monthly_report_auto",
         replace_existing=True,
     )
     scheduler.add_job(
