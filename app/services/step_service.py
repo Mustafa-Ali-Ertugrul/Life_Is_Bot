@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.schedule import parse_days
+from app.core.schedule import format_days, parse_days
 from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, ReminderEvent, StepLog, StepSettings, User
 from app.services import preference_service, reminder_service
@@ -72,6 +72,14 @@ async def update_reminder_time(
 async def toggle_step_bot(session: AsyncSession, user_id: int, is_active: bool) -> StepSettings:
     settings = await get_or_create_settings(session, user_id)
     settings.is_active = is_active
+    await session.commit()
+    await session.refresh(settings)
+    return settings
+
+
+async def update_days_of_week(session: AsyncSession, user_id: int, days: list[int]) -> StepSettings:
+    settings = await get_or_create_settings(session, user_id)
+    settings.days_of_week = format_days(days)
     await session.commit()
     await session.refresh(settings)
     return settings
@@ -177,5 +185,6 @@ __all__ = [
     "log_steps",
     "toggle_step_bot",
     "update_daily_target",
+    "update_days_of_week",
     "update_reminder_time",
 ]
