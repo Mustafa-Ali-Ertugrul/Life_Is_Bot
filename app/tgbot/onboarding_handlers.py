@@ -116,12 +116,14 @@ async def _send_question(
     question: OnboardingQuestion,
     index: int,
 ) -> None:
-    assert update.callback_query is not None
     text = _format_question(question, index + 1, len(ONBOARDING_QUESTIONS))
-    await update.callback_query.edit_message_text(
-        text, reply_markup=onboarding_question_keyboard(question)
-    )
-    await update.callback_query.answer()
+    keyboard = onboarding_question_keyboard(question)
+    if update.callback_query is not None:
+        await update.callback_query.edit_message_text(text, reply_markup=keyboard)
+        await update.callback_query.answer()
+        return
+    assert update.effective_message is not None
+    await update.effective_message.reply_text(text, reply_markup=keyboard)
 
 
 async def onboarding_begin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
