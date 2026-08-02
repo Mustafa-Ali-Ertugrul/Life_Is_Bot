@@ -30,7 +30,7 @@ async def create_habit(
         is_active=True,
     )
     session.add(habit)
-    await session.commit()
+    await session.flush()
     await session.refresh(habit)
     await preference_service.toggle_preference(session, user_id, BotKey.HABIT, enabled=True)
     return habit
@@ -53,7 +53,7 @@ async def toggle_habit(session: AsyncSession, habit_id: int, is_active: bool) ->
     if habit is None:
         return None
     habit.is_active = is_active
-    await session.commit()
+    await session.flush()
     await session.refresh(habit)
     return habit
 
