@@ -1,5 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+from app.core.onboarding_questions import OnboardingQuestion, QuestionType
 from app.models import (
     BotPreference,
     Habit,
@@ -30,6 +31,34 @@ from app.tgbot.callback_parser import (
     format_ui,
 )
 from app.tgbot.messages import BOT_KEYS_TR
+
+CB_BEGIN = "ui:onboarding:begin"
+CB_SKIP = "ui:onboarding:skip"
+CB_ANS_PREFIX = "ui:onboarding:ans:"
+CB_TOGGLE_PREFIX = "ui:onboarding:toggle:"
+CB_MULTI_DONE = "ui:onboarding:multi_done"
+
+
+def onboarding_intro_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("🚀 Başla", callback_data=CB_BEGIN)],
+        [InlineKeyboardButton("⏭️ Atla", callback_data=CB_SKIP)],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def onboarding_question_keyboard(question: OnboardingQuestion) -> InlineKeyboardMarkup | None:
+    if question.question_type is QuestionType.NUMBER_INPUT:
+        return None
+    keyboard: list[list[InlineKeyboardButton]] = []
+    for option in question.options:
+        if question.question_type is QuestionType.MULTI_CHOICE:
+            keyboard.append([InlineKeyboardButton(option, callback_data=CB_TOGGLE_PREFIX + option)])
+        else:
+            keyboard.append([InlineKeyboardButton(option, callback_data=CB_ANS_PREFIX + option)])
+    if question.question_type is QuestionType.MULTI_CHOICE:
+        keyboard.append([InlineKeyboardButton("✅ Bitti", callback_data=CB_MULTI_DONE)])
+    return InlineKeyboardMarkup(keyboard)
 
 
 def main_menu() -> InlineKeyboardMarkup:
@@ -447,6 +476,7 @@ def settings_menu(user: User) -> InlineKeyboardMarkup:
             )
         ]
     )
+    keyboard.append([InlineKeyboardButton("📋 Profil Oluştur", callback_data=CB_BEGIN)])
     keyboard.append(
         [InlineKeyboardButton("◀️ Geri", callback_data=format_ui(UICallbackKind.MAIN_MENU))]
     )

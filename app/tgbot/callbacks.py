@@ -22,7 +22,7 @@ from app.tgbot.callback_parser import (
     parse,
 )
 from app.tgbot.habit_handlers import show_habit_detail, show_habit_list, toggle_habit
-from app.tgbot.keyboards import bot_detail, bot_list, main_menu
+from app.tgbot.keyboards import bot_detail, bot_list, main_menu, onboarding_intro_keyboard
 from app.tgbot.medication_handlers import (
     medication_detail_callback,
     medication_list_callback,
@@ -44,6 +44,7 @@ from app.tgbot.messages import (
     CONSENT_GRANTED,
     CORE_BOT_CANNOT_BE_DISABLED,
     HELP,
+    ONBOARDING_INTRO,
     WELCOME,
 )
 from app.tgbot.report_handlers import show_report
@@ -198,8 +199,16 @@ async def _handle_ui_callback(
         if user_id is None:
             user_id = await _ensure_user(context, update)
         async with unit_of_work() as session:
-            await user_service.grant_consent(session, user_id)
-        await query.edit_message_text(f"{CONSENT_GRANTED}\n\n{WELCOME}", reply_markup=main_menu())
+            user = await user_service.grant_consent(session, user_id)
+        if user.onboarding_completed_at is None and not user.onboarding_skipped:
+            await query.edit_message_text(
+                f"{CONSENT_GRANTED}\n\n{ONBOARDING_INTRO}",
+                reply_markup=onboarding_intro_keyboard(),
+            )
+        else:
+            await query.edit_message_text(
+                f"{CONSENT_GRANTED}\n\n{WELCOME}", reply_markup=main_menu()
+            )
         await query.answer()
         return
 
