@@ -390,6 +390,9 @@ ABANDONED_MULTIPLE = (
     "Bağlantınızı kontrol edin veya botu yeniden başlatın."
 )
 
+DIGEST_HEADER = "📋 Son hatırlatmalarınız\n\n"
+DIGEST_ITEM = "• {bot_name}: {label}"
+
 COMMANDS = [
     ("start", "Ana menüyü aç"),
     ("botlar", "Botları yönet"),
