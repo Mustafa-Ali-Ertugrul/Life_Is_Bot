@@ -37,7 +37,7 @@ async def get_or_create_settings(session: AsyncSession, user_id: int) -> StepSet
         is_active=True,
     )
     session.add(settings)
-    await session.commit()
+    await session.flush()
     await session.refresh(settings)
     await preference_service.toggle_preference(session, user_id, BotKey.STEP, enabled=True)
     return settings
@@ -50,7 +50,7 @@ async def update_daily_target(
         raise InvalidStateError("daily_target must be between 0 and 100000")
     settings = await get_or_create_settings(session, user_id)
     settings.daily_target = daily_target
-    await session.commit()
+    await session.flush()
     await session.refresh(settings)
     return settings
 
@@ -65,7 +65,7 @@ async def update_reminder_time(
     settings = await get_or_create_settings(session, user_id)
     settings.reminder_hour = reminder_hour
     settings.reminder_minute = reminder_minute
-    await session.commit()
+    await session.flush()
     await session.refresh(settings)
     return settings
 
@@ -73,7 +73,7 @@ async def update_reminder_time(
 async def toggle_step_bot(session: AsyncSession, user_id: int, is_active: bool) -> StepSettings:
     settings = await get_or_create_settings(session, user_id)
     settings.is_active = is_active
-    await session.commit()
+    await session.flush()
     await session.refresh(settings)
     return settings
 
@@ -81,7 +81,7 @@ async def toggle_step_bot(session: AsyncSession, user_id: int, is_active: bool) 
 async def update_days_of_week(session: AsyncSession, user_id: int, days: list[int]) -> StepSettings:
     settings = await get_or_create_settings(session, user_id)
     settings.days_of_week = format_days(days)
-    await session.commit()
+    await session.flush()
     await session.refresh(settings)
     return settings
 
@@ -115,12 +115,12 @@ async def log_steps(
     if existing is not None:
         existing.steps = steps
         existing.source = source
-        await session.commit()
+        await session.flush()
         await session.refresh(existing)
         return existing
     log = StepLog(user_id=user_id, log_date=log_date, steps=steps, source=source)
     session.add(log)
-    await session.commit()
+    await session.flush()
     await session.refresh(log)
     return log
 

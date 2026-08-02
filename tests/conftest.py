@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from contextlib import asynccontextmanager
 
 import pytest
 import pytest_asyncio
@@ -9,6 +10,21 @@ from app.modules.registry import setup_default_modules
 
 TELEGRAM_USER_ID = "123456789"
 TELEGRAM_USER_ID_2 = "987654321"
+
+
+@asynccontextmanager
+async def _session_uow(session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
+    yield session
+
+
+@pytest.fixture
+def patch_uow(
+    monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession
+) -> Callable[[object], None]:
+    def _patch(module: object) -> None:
+        monkeypatch.setattr(module, "unit_of_work", lambda: _session_uow(db_session))
+
+    return _patch
 
 
 @pytest.fixture(autouse=True)

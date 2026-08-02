@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.schedule import format_days, parse_days, parse_time, parse_user_days
 from app.models import SportPlan
 from app.services import sport_service
@@ -107,7 +107,7 @@ async def sport_list_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await sport_service.list_sport_plans(session, user_id)
 
     if not plans:
@@ -137,7 +137,7 @@ async def sport_list_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await sport_service.list_sport_plans(session, user_id)
 
     if not plans:
@@ -162,7 +162,7 @@ async def sport_detail_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await sport_service.get_sport_plan(session, parsed.sport_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(SPORT_NOT_FOUND)
@@ -186,7 +186,7 @@ async def sport_toggle_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await sport_service.get_sport_plan(session, parsed.sport_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(SPORT_NOT_FOUND)
@@ -272,7 +272,7 @@ async def sport_confirm_callback(update: Update, context: ContextTypes.DEFAULT_T
     hour = int(data.get("sport_draft_hour", 0))
     minute = int(data.get("sport_draft_minute", 0))
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await sport_service.create_sport_plan(
             session, user_id, sport_type, format_days(days), hour, minute
         )

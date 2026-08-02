@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.schedule import parse_days, parse_time, parse_user_days
 from app.core.timezone import now_in
 from app.models import StepSettings
@@ -148,7 +148,7 @@ async def step_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     assert update.effective_message is not None
     user_id = await _ensure_user_id(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         existing = await step_service.get_settings(session, user_id)
         settings, steps = await _load_menu_data(session, user_id)
 
@@ -164,7 +164,7 @@ async def step_menu_callback(
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         settings, steps = await _load_menu_data(session, user_id)
 
     await update.callback_query.edit_message_text(
@@ -180,7 +180,7 @@ async def step_settings_callback(
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         settings = await step_service.get_or_create_settings(session, user_id)
 
     await update.callback_query.edit_message_text(
@@ -196,7 +196,7 @@ async def step_toggle_callback(
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         settings = await step_service.get_or_create_settings(session, user_id)
         settings = await step_service.toggle_step_bot(session, user_id, not settings.is_active)
 
@@ -239,7 +239,7 @@ async def step_ask_steps(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     user_id = await _ensure_user_id(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         settings = await step_service.get_or_create_settings(session, user_id)
         user = await settings_service.get_settings(session, user_id)
         local_date = now_in(user.timezone).date()
@@ -286,7 +286,7 @@ async def step_ask_goal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         return ASK_GOAL
 
     user_id = await _ensure_user_id(context, update)
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await step_service.update_daily_target(session, user_id, goal)
 
     await update.effective_message.reply_text(STEP_GOAL_SAVED.format(goal=_format_thousands(goal)))
@@ -313,7 +313,7 @@ async def step_ask_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         return ASK_TIME
 
     user_id = await _ensure_user_id(context, update)
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await step_service.update_reminder_time(session, user_id, hour, minute)
 
     await update.effective_message.reply_text(
@@ -342,7 +342,7 @@ async def step_ask_days(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         return ASK_DAYS
 
     user_id = await _ensure_user_id(context, update)
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         settings = await step_service.update_days_of_week(session, user_id, days)
 
     await update.effective_message.reply_text(

@@ -1,7 +1,7 @@
 from itertools import batched
 
 from app.core.config import settings
-from app.core.database import async_session_factory
+from app.core.database import async_session_factory, unit_of_work
 from app.core.logger import get_logger
 from app.core.notification_policy import evaluate_notification
 from app.core.timezone import now_in
@@ -53,7 +53,6 @@ async def reminder_tick() -> None:
             action = decision["action"]
             if action == "defer":
                 event.notify_after = decision["defer_until"]
-                await session.commit()
                 await notification_service.log_notification(
                     session,
                     user_id=event.user_id,
@@ -62,6 +61,7 @@ async def reminder_tick() -> None:
                     channel="telegram",
                     status=NotificationLogStatus.DEFERRED_QUIET_HOURS.value,
                 )
+                await session.commit()
                 continue
             if action == "suppress":
                 if decision["reason"] in ("already_responded", "not_scheduled", "already_notified"):
@@ -78,6 +78,7 @@ async def reminder_tick() -> None:
                     channel="telegram",
                     status=_SUPPRESS_LOG_STATUSES[decision["reason"]],
                 )
+                await session.commit()
                 continue
             if BotKey(event.bot_key) in DIGEST_BOT_KEYS:
                 notified = await reminder_service.mark_notified(session, event.id)
@@ -92,6 +93,7 @@ async def reminder_tick() -> None:
                     channel="telegram",
                     status=NotificationLogStatus.DIGEST_PENDING.value,
                 )
+                await session.commit()
                 continue
             message_id = await send_reminder(bot, event)
             if message_id is None:
@@ -104,6 +106,7 @@ async def reminder_tick() -> None:
                     channel="telegram",
                     status=NotificationLogStatus.FAILED.value,
                 )
+                await session.commit()
                 continue
             notified = await reminder_service.mark_notified(session, event.id)
             if not notified:
@@ -117,6 +120,7 @@ async def reminder_tick() -> None:
                 channel="telegram",
                 status=NotificationLogStatus.SENT.value,
             )
+            await session.commit()
     logger.info("reminder tick done", due_count=len(due))
 
 
@@ -143,6 +147,7 @@ async def daily_events_job() -> None:
                         continue
                     events = await module.generate_daily_events(session, context)
                     total += len(events)
+                await session.commit()
     logger.info("daily events job done", created_count=total)
 
 
@@ -153,7 +158,7 @@ async def notification_retry_job() -> None:
     if bot is None:
         logger.warning("notification retry skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         processed = await notification_service.retry_failed_notifications(
             session, bot, send_reminder
         )
@@ -168,7 +173,7 @@ async def abandoned_notification_job() -> None:
     if bot is None:
         logger.warning("abandoned notification skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         notified = await notification_service.notify_abandoned(session, bot, send_plain_text)
     if notified:
         logger.info("abandoned notification sent", user_count=notified)
@@ -181,7 +186,7 @@ async def notification_digest_job() -> None:
     if bot is None:
         logger.warning("notification digest skipped, no bot instance")
         return
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         notified = await notification_service.send_digest(session, bot, send_plain_text)
     if notified:
         logger.info("notification digest sent", user_count=notified)

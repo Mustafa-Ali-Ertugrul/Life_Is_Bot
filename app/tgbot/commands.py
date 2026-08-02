@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.services import preference_service, user_service
 from app.tgbot.keyboards import bot_list, consent_menu, main_menu
 from app.tgbot.messages import (
@@ -23,7 +23,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.effective_message is not None
 
     telegram_user = update.effective_user
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await user_service.find_or_create_by_telegram_id(
             session,
             str(telegram_user.id),
@@ -46,7 +46,7 @@ async def cmd_botlar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.effective_message.reply_text(WELCOME, reply_markup=main_menu())
         return
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         preferences = await preference_service.list_preferences(session, user_id)
 
     lines = [

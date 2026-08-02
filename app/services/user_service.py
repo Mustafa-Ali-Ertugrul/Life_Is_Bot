@@ -38,7 +38,7 @@ async def find_or_create_by_telegram_id(
                     account.first_name = first_name
                     changed = True
                 if changed:
-                    await session.commit()
+                    await session.flush()
         return user
 
     now: datetime = now_in("UTC")
@@ -54,7 +54,7 @@ async def find_or_create_by_telegram_id(
         linked_at=now,
     )
     session.add(account)
-    await session.commit()
+    await session.flush()
     result = await session.execute(
         select(User).where(User.id == user.id).options(selectinload(User.telegram_account))
     )
@@ -81,5 +81,5 @@ async def grant_consent(session: AsyncSession, user_id: int) -> User:
     if not user.consent_given:
         user.consent_given = True
         user.consented_at = now_in("UTC")
-        await session.commit()
+        await session.flush()
     return user

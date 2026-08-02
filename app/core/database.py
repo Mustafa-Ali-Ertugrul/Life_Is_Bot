@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import asynccontextmanager
 
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -31,6 +32,25 @@ async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_o
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with async_session_factory() as session:
         yield session
+
+
+@asynccontextmanager
+async def unit_of_work() -> AsyncGenerator[AsyncSession, None]:
+    """Transaction boundary: commit on success, rollback on error.
+
+    Usage:
+        async with unit_of_work() as session:
+            await some_service.do_thing(session, ...)
+            await other_service.do_other(session, ...)
+        # Auto-commit here; rollback if exception raised
+    """
+    async with async_session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def init_db() -> None:

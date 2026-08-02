@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.services import habit_service
 from app.tgbot.callback_parser import UICallback
 from app.tgbot.keyboards import habit_confirm, habit_detail, habit_list
@@ -75,7 +75,7 @@ async def cmd_rutin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         habits = await habit_service.list_habits(session, user_id)
 
     if not habits:
@@ -103,7 +103,7 @@ async def show_habit_list(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         habits = await habit_service.list_habits(session, user_id)
 
     if not habits:
@@ -134,7 +134,7 @@ async def show_habit_detail(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         habit = await habit_service.get_habit(session, parsed.habit_id)
         if habit is None or habit.user_id != user_id:
             await update.callback_query.edit_message_text(HABIT_NOT_FOUND)
@@ -163,7 +163,7 @@ async def toggle_habit(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         habit = await habit_service.get_habit(session, parsed.habit_id)
         if habit is None or habit.user_id != user_id:
             await update.callback_query.edit_message_text(HABIT_NOT_FOUND)
@@ -268,7 +268,7 @@ async def confirm_yes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     minute = int(data.get("habit_minute", 0))
     days_of_week = str(data.get("habit_days", "1,2,3,4,5,6,7"))
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         habit = await habit_service.create_habit(session, user_id, name, hour, minute, days_of_week)
 
     text = HABIT_CREATED.format(

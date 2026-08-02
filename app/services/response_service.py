@@ -49,7 +49,7 @@ async def save_response(
     await session.execute(
         update(ReminderEvent).where(ReminderEvent.id == reminder_event_id).values(status=status)
     )
-    await session.commit()
+    await session.flush()
     await session.refresh(new_response)
     return new_response
 

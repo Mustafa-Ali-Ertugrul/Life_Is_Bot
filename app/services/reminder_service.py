@@ -60,11 +60,11 @@ async def create_event(
         interpretation_json=interpretation_json,
         created_at=now_in("UTC"),
     )
-    session.add(event)
     try:
-        await session.commit()
+        async with session.begin_nested():
+            session.add(event)
+            await session.flush()
     except IntegrityError:
-        await session.rollback()
         existing = await _find_by_dedupe(session, user_id, dedupe_key)
         if existing is not None:
             if existing.status == ReminderStatus.CANCELLED.value:
@@ -82,9 +82,9 @@ async def reschedule_event(
     if event is None:
         return None
     try:
-        return await _reactivate(session, event, new_scheduled_at)
+        async with session.begin_nested():
+            return await _reactivate(session, event, new_scheduled_at)
     except IntegrityError:
-        await session.rollback()
         return None
 
 
@@ -100,7 +100,7 @@ async def _reactivate(
     )
     event.status = ReminderStatus.SCHEDULED.value
     event.notified_at = None
-    await session.commit()
+    await session.flush()
     await session.refresh(event)
     return event
 
@@ -170,7 +170,7 @@ async def mark_notified(session: AsyncSession, event_id: int) -> bool:
         )
         .values(status=ReminderStatus.NOTIFIED.value, notified_at=now_in("UTC"))
     )
-    await session.commit()
+    await session.flush()
     rowcount = result.rowcount  # type: ignore[attr-defined]
     return rowcount is not None and rowcount > 0
 
@@ -184,7 +184,7 @@ async def mark_suppressed(session: AsyncSession, event_id: int) -> bool:
         )
         .values(status=ReminderStatus.SUPPRESSED.value)
     )
-    await session.commit()
+    await session.flush()
     rowcount = result.rowcount  # type: ignore[attr-defined]
     return rowcount is not None and rowcount > 0
 

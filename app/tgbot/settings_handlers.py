@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.models import User
 from app.services import settings_service
 from app.tgbot.callback_parser import UICallback
@@ -78,7 +78,7 @@ async def show_settings_menu(
 
 
 async def _settings_payload(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await settings_service.get_settings(session, user_id)
     return _format_settings(user), settings_menu(user)
 
@@ -115,7 +115,7 @@ async def tz_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not settings_service.is_valid_timezone(raw):
         await update.effective_message.reply_text(SETTINGS_INVALID_TIMEZONE)
         return ASK_TZ
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await settings_service.update_timezone(session, user_id, raw)
     await update.effective_message.reply_text(
         SETTINGS_TIMEZONE_UPDATED.format(timezone=user.timezone)
@@ -151,7 +151,7 @@ async def qh_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.effective_message.reply_text(SETTINGS_INVALID_TIME)
         return ASK_QH_END
     start = str(_get_user_data(context).get("quiet_hours_start", ""))
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await settings_service.set_quiet_hours(session, user_id, start, raw)
     await update.effective_message.reply_text(
         SETTINGS_QUIET_HOURS_UPDATED.format(
@@ -166,7 +166,7 @@ async def qh_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def toggle_notifications_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         enabled = await settings_service.toggle_notifications(session, user_id)
     text, keyboard = await _settings_payload(user_id)
     await update.callback_query.edit_message_text(text, reply_markup=keyboard)
@@ -178,7 +178,7 @@ async def toggle_notifications_cb(update: Update, context: ContextTypes.DEFAULT_
 async def disable_quiet_hours_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.callback_query is not None
     user_id = await _ensure_user_id(context, update)
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await settings_service.clear_quiet_hours(session, user_id)
     text, keyboard = await _settings_payload(user_id)
     await update.callback_query.edit_message_text(text, reply_markup=keyboard)

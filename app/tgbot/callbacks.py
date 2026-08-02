@@ -3,7 +3,7 @@ from datetime import timedelta
 from telegram import CallbackQuery, Update
 from telegram.ext import ContextTypes
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.errors import InvalidStateError, NotFoundError, PermissionDeniedError
 from app.core.logger import get_logger
 from app.core.timezone import now_in
@@ -197,7 +197,7 @@ async def _handle_ui_callback(
     if parsed.kind is UICallbackKind.CONSENT_YES:
         if user_id is None:
             user_id = await _ensure_user(context, update)
-        async with async_session_factory() as session:
+        async with unit_of_work() as session:
             await user_service.grant_consent(session, user_id)
         await query.edit_message_text(f"{CONSENT_GRANTED}\n\n{WELCOME}", reply_markup=main_menu())
         await query.answer()
@@ -234,7 +234,7 @@ async def _handle_reminder_callback(
     if user_id is None:
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         event = await reminder_service.get_event(session, parsed.event_id)
         if event is None:
             await query.answer("Bildirim bulunamadı", show_alert=True)
@@ -298,7 +298,7 @@ async def _handle_reminder_callback(
 
 
 async def _show_bot_list(query: CallbackQuery, user_id: int) -> None:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         preferences = await preference_service.list_preferences(session, user_id)
 
     lines = [
@@ -313,7 +313,7 @@ async def _show_bot_list(query: CallbackQuery, user_id: int) -> None:
 
 
 async def _show_bot_detail(query: CallbackQuery, user_id: int, bot_key: BotKey) -> None:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         preference = await preference_service.get_or_create_preference(session, user_id, bot_key)
     can_toggle = bot_key is not BotKey.CORE
     status = BOT_STATUS_ACTIVE if preference.enabled else BOT_STATUS_INACTIVE
@@ -323,7 +323,7 @@ async def _show_bot_detail(query: CallbackQuery, user_id: int, bot_key: BotKey) 
 
 
 async def _toggle_bot(query: CallbackQuery, user_id: int, bot_key: BotKey) -> None:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         existing = await preference_service.get_preference(session, user_id, bot_key)
         preference = (
             existing
@@ -353,7 +353,7 @@ async def _toggle_bot(query: CallbackQuery, user_id: int, bot_key: BotKey) -> No
 async def _ensure_user(context: ContextTypes.DEFAULT_TYPE, update: Update) -> int:
     assert update.effective_user is not None
     telegram_user = update.effective_user
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await user_service.find_or_create_by_telegram_id(
             session,
             str(telegram_user.id),

@@ -11,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.schedule import format_days, parse_days, parse_time, parse_user_days
 from app.core.supplement import (
     format_duration_range,
@@ -171,7 +171,7 @@ async def supplement_list_command(update: Update, context: ContextTypes.DEFAULT_
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await supplement_service.list_supplement_plans(session, user_id)
 
     if not plans:
@@ -201,7 +201,7 @@ async def supplement_list_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plans = await supplement_service.list_supplement_plans(session, user_id)
 
     if not plans:
@@ -226,7 +226,7 @@ async def supplement_detail_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await supplement_service.get_supplement_plan(session, parsed.supplement_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(SUPPLEMENT_NOT_FOUND)
@@ -250,7 +250,7 @@ async def supplement_toggle_callback(
 
         user_id = await _ensure_user(context, update)
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         plan = await supplement_service.get_supplement_plan(session, parsed.supplement_plan_id)
         if plan is None or plan.user_id != user_id:
             await update.callback_query.edit_message_text(SUPPLEMENT_NOT_FOUND)
@@ -362,7 +362,7 @@ async def supplement_ask_duration(update: Update, context: ContextTypes.DEFAULT_
             from app.tgbot.callbacks import _ensure_user
 
             user_id = await _ensure_user(context, update)
-        async with async_session_factory() as session:
+        async with unit_of_work() as session:
             user = await settings_service.get_settings(session, user_id)
         start_date = now_in(user.timezone).date()
         end_date = start_date + timedelta(days=duration_days - 1)
@@ -398,7 +398,7 @@ async def supplement_confirm_callback(update: Update, context: ContextTypes.DEFA
     start_date = data.get("supp_draft_start_date")
     end_date = data.get("supp_draft_end_date")
 
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         await supplement_service.create_supplement_plan(
             session,
             user_id,

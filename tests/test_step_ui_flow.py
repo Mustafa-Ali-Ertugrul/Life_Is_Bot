@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
@@ -58,8 +59,8 @@ async def user_id(db_session: AsyncSession) -> int:
 
 
 @pytest.fixture
-def session_factory_patch(monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession) -> None:
-    monkeypatch.setattr(step_handlers, "async_session_factory", lambda: db_session)
+def session_factory_patch(patch_uow: Callable[[object], None]) -> None:
+    patch_uow(step_handlers)
 
 
 async def test_flow_log_steps(

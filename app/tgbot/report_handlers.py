@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from app.core.database import async_session_factory
+from app.core.database import unit_of_work
 from app.core.timezone import now_in
 from app.models import BotKey
 from app.services import report_service, settings_service
@@ -93,19 +93,19 @@ async def show_report(
 
 
 async def _daily_payload(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         data = await report_service.generate_daily_report(session, user_id)
     return _format_daily(data), report_menu()
 
 
 async def _weekly_payload(user_id: int) -> tuple[str, InlineKeyboardMarkup]:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         data = await report_service.generate_weekly_report(session, user_id)
     return _format_weekly(data), report_menu()
 
 
 async def _current_year_month(user_id: int) -> tuple[int, int]:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         user = await settings_service.get_settings(session, user_id)
     now = now_in(user.timezone)
     return now.year, now.month
@@ -126,7 +126,7 @@ def _parse_month_arg(args: list[str]) -> tuple[int, int] | None:
 
 
 async def _monthly_payload(user_id: int, year: int, month: int) -> tuple[str, InlineKeyboardMarkup]:
-    async with async_session_factory() as session:
+    async with unit_of_work() as session:
         report = await report_service.generate_monthly_report(session, user_id, year, month)
     return _format_monthly_report(report), monthly_report_nav(year, month)
 
