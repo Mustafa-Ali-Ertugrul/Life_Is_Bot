@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     notification_retry_batch_size: int = 10
     debug_scheduler: bool = False
     log_level: str = "INFO"
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+    api_cors_origins: list[str] = ["*"]
 
 
 @lru_cache

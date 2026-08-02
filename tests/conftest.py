@@ -3,8 +3,11 @@ from contextlib import asynccontextmanager
 
 import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.api.deps import get_db
+from app.api.main import create_app
 from app.models import Base
 from app.modules.registry import setup_default_modules
 
@@ -45,3 +48,16 @@ async def db_session() -> AsyncIterator[AsyncSession]:
         yield session
 
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def api_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+    app = create_app()
+
+    async def _override_db() -> AsyncGenerator[AsyncSession, None]:
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()
