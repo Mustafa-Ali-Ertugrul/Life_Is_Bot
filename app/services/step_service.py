@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.errors import InvalidStateError
 from app.core.schedule import format_days, parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, ReminderEvent, StepLog, StepSettings, User
@@ -46,7 +47,7 @@ async def update_daily_target(
     session: AsyncSession, user_id: int, daily_target: int
 ) -> StepSettings:
     if not 0 <= daily_target <= 100000:
-        raise ValueError("daily_target must be between 0 and 100000")
+        raise InvalidStateError("daily_target must be between 0 and 100000")
     settings = await get_or_create_settings(session, user_id)
     settings.daily_target = daily_target
     await session.commit()
@@ -58,9 +59,9 @@ async def update_reminder_time(
     session: AsyncSession, user_id: int, reminder_hour: int, reminder_minute: int
 ) -> StepSettings:
     if not 0 <= reminder_hour <= 23:
-        raise ValueError("reminder_hour must be between 0 and 23")
+        raise InvalidStateError("reminder_hour must be between 0 and 23")
     if not 0 <= reminder_minute <= 59:
-        raise ValueError("reminder_minute must be between 0 and 59")
+        raise InvalidStateError("reminder_minute must be between 0 and 59")
     settings = await get_or_create_settings(session, user_id)
     settings.reminder_hour = reminder_hour
     settings.reminder_minute = reminder_minute
@@ -109,7 +110,7 @@ async def log_steps(
     source: str = "manual",
 ) -> StepLog:
     if not 0 <= steps <= 200000:
-        raise ValueError("steps must be between 0 and 200000")
+        raise InvalidStateError("steps must be between 0 and 200000")
     existing = await get_steps_for_date(session, user_id, log_date)
     if existing is not None:
         existing.steps = steps
