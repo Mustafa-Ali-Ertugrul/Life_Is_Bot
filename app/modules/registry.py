@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.models import BotKey
 from app.modules.base import ReminderModule
 from app.modules.habit import HabitModule
+from app.modules.medication import MedicationModule
 from app.modules.sport import SportModule
 from app.modules.step import StepModule
 from app.modules.supplement import SupplementModule
@@ -40,6 +41,7 @@ def setup_default_modules() -> None:
     register_module(SportModule())
     register_module(SupplementModule())
     register_module(StepModule())
+    register_module(MedicationModule())
 
 
 __all__ = [
