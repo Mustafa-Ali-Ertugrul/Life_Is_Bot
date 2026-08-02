@@ -9,6 +9,7 @@ from app.models.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.bot_preference import BotPreference
     from app.models.habit import Habit
+    from app.models.medication_plan import MedicationPlan
     from app.models.reminder_event import ReminderEvent
     from app.models.sport_plan import SportPlan
     from app.models.step_log import StepLog
@@ -62,6 +63,9 @@ class User(Base, TimestampMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
     supplement_plans: Mapped[list["SupplementPlan"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    medication_plans: Mapped[list["MedicationPlan"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
     step_settings: Mapped["StepSettings | None"] = relationship(

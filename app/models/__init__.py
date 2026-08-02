@@ -11,6 +11,7 @@ from app.models.enums import (
     consent_requirement_for,
 )
 from app.models.habit import Habit
+from app.models.medication_plan import MedicationPlan
 from app.models.notification_log import NotificationLog
 from app.models.reminder_event import ReminderEvent
 from app.models.sport_plan import SportPlan
@@ -29,6 +30,7 @@ __all__ = [
     "BotPreference",
     "ConsentRequirement",
     "Habit",
+    "MedicationPlan",
     "NotificationLog",
     "NotificationLogStatus",
     "ReminderEvent",
