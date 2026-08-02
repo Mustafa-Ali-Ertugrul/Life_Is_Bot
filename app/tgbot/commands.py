@@ -14,6 +14,7 @@ from app.tgbot.messages import (
     HELP,
     WELCOME,
 )
+from app.tgbot.onboarding_handlers import onboarding_offer
 
 MAIN_MENU_COMMANDS = {"start", "menu"}
 
@@ -31,9 +32,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             telegram_user.first_name,
         )
         context.user_data["user_id"] = user.id  # type: ignore[index]
-        if not user.consent_given:
-            await update.effective_message.reply_text(CONSENT_TEXT, reply_markup=consent_menu())
-            return
+
+    if not user.consent_given:
+        await update.effective_message.reply_text(CONSENT_TEXT, reply_markup=consent_menu())
+        return
+
+    if user.onboarding_completed_at is None and not user.onboarding_skipped:
+        await onboarding_offer(update, context)
+        return
 
     await update.effective_message.reply_text(WELCOME, reply_markup=main_menu())
 
