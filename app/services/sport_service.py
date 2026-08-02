@@ -30,7 +30,7 @@ async def create_sport_plan(
         is_active=True,
     )
     session.add(plan)
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     await preference_service.toggle_preference(session, user_id, BotKey.SPORT, enabled=True)
     return plan
@@ -55,7 +55,7 @@ async def toggle_sport_plan(
     if plan is None:
         return None
     plan.is_active = is_active
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     return plan
 
