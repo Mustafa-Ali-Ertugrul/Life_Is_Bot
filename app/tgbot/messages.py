@@ -87,6 +87,38 @@ SETTINGS_NOTIFICATIONS_ON_MSG = "Bildirimler açıldı. ✅"
 SETTINGS_NOTIFICATIONS_OFF_MSG = "Bildirimler kapatıldı."
 SETTINGS_CANCELLED = "Ayarlar iptal edildi."
 
+ONBOARDING_INTRO = (
+    "Profilini oluşturmak ister misin? 📋\n\n"
+    "Kısa bir soru setiyle sana uygun botları öneririm:\n"
+    "• Rutin takibi\n"
+    "• Spor ve adım hedefleri\n"
+    "• Supplement ve ilaç hatırlatmaları\n\n"
+    "Yaklaşık 1-2 dakika sürer. İstersen atlayabilirsin."
+)
+ONBOARDING_QUESTION = "📋 Profil Oluşturma ({index}/{total})\n\n{text}"
+ONBOARDING_INVALID_NUMBER = (
+    "Geçersiz adım hedefi. 1000 ile 100000 arasında bir sayı girin.\n\n/iptal ile vazgeçebilirsin."
+)
+ONBOARDING_MULTI_HINT = "En az bir seçenek seçin veya /iptal ile vazgeçin."
+ONBOARDING_SKIPPED = (
+    "Onboarding atlandı. İstediğin zaman /ayarlar menüsünden profilini oluşturabilirsin."
+)
+ONBOARDING_CANCELLED = (
+    "Onboarding iptal edildi. İstediğin zaman /ayarlar menüsünden profilini oluşturabilirsin."
+)
+ONBOARDING_COMPLETE_HEADER = "✅ Profilin oluşturuldu: {profile_label}\n"
+ONBOARDING_SUMMARY_HEADER = "Profil özeti 📝\n"
+ONBOARDING_BOT_LINE = "{icon} {name} botu aktif"
+ONBOARDING_STEP_GOAL_LINE = "🎯 Günlük adım hedefi: {goal}"
+ONBOARDING_COMPLETE_FOOTER = "\nAna menüden devam edebilirsin."
+
+ONBOARDING_PROFILE_LABELS: dict[str, str] = {
+    "chronic": "Kronik Sağlık Takibi",
+    "athlete": "Sporcu Profili",
+    "mixed": "Spor + Sağlık Takibi",
+    "general": "Genel Profil",
+}
+
 REPORT_DAILY_TITLE = "Bugünkü özet 📊"
 REPORT_WEEKLY_TITLE = "Bu hafta 📈"
 REPORT_SUMMARY_LINES = (
