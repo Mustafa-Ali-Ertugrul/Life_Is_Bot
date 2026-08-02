@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from app.models.habit import Habit
     from app.models.reminder_event import ReminderEvent
     from app.models.sport_plan import SportPlan
+    from app.models.step_log import StepLog
+    from app.models.step_settings import StepSettings
     from app.models.supplement_plan import SupplementPlan
     from app.models.telegram_account import TelegramAccount
 
@@ -60,5 +62,13 @@ class User(Base, TimestampMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
     supplement_plans: Mapped[list["SupplementPlan"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    step_settings: Mapped["StepSettings | None"] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    step_logs: Mapped[list["StepLog"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
