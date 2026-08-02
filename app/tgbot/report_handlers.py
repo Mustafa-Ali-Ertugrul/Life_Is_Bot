@@ -11,6 +11,7 @@ from app.tgbot.keyboards import monthly_report_nav, report_menu
 from app.tgbot.messages import (
     BOT_ICONS,
     BOT_KEYS_TR,
+    DAILY_REPORT_STEP_LINE,
     MONTHLY_REPORT_BOT_LINE,
     MONTHLY_REPORT_EMPTY,
     MONTHLY_REPORT_HEADER,
@@ -167,7 +168,9 @@ def _format_monthly_report(report: MonthlyReport) -> str:
 
 
 def _format_daily(data: DailyReport) -> str:
-    if data["total"] == 0:
+    step_steps = data["step_steps"]
+    step_goal = data["step_goal"]
+    if data["total"] == 0 and (step_steps is None or step_goal is None):
         return f"{REPORT_DAILY_TITLE}\n\n{REPORT_EMPTY}"
     lines = [
         REPORT_DAILY_TITLE,
@@ -179,6 +182,16 @@ def _format_daily(data: DailyReport) -> str:
             unanswered=data["unanswered"],
         ),
     ]
+    if step_steps is not None and step_goal is not None:
+        pct = round(step_steps * 100 / step_goal) if step_goal > 0 else 0
+        lines.append("")
+        lines.append(
+            DAILY_REPORT_STEP_LINE.format(
+                steps=f"{step_steps:,}".replace(",", "."),
+                goal=f"{step_goal:,}".replace(",", "."),
+                pct=pct,
+            )
+        )
     if data["completed_items"]:
         lines.append("")
         lines.append(REPORT_COMPLETED_HEADER)

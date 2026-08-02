@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.timezone import get_user_timezone, now_in
 from app.models import ReminderEvent, ReminderStatus, User
+from app.services import step_service
 from app.services.event_labels import event_label
 
 
@@ -21,6 +22,8 @@ class DailyReport(TypedDict):
     unanswered: int
     completed_items: list[str]
     missed_items: list[str]
+    step_steps: int | None
+    step_goal: int | None
 
 
 class WeeklyReport(TypedDict):
@@ -105,6 +108,15 @@ async def generate_daily_report(
         else:
             unanswered += 1
 
+    step_steps: int | None = None
+    step_goal: int | None = None
+    step_settings = await step_service.get_settings(session, user_id)
+    if step_settings is not None:
+        step_log = await step_service.get_steps_for_date(session, user_id, day)
+        if step_log is not None:
+            step_steps = step_log.steps
+            step_goal = step_settings.daily_target
+
     return DailyReport(
         date=day.isoformat(),
         total=len(completed) + len(missed) + unanswered,
@@ -113,6 +125,8 @@ async def generate_daily_report(
         unanswered=unanswered,
         completed_items=completed,
         missed_items=missed,
+        step_steps=step_steps,
+        step_goal=step_goal,
     )
 
 

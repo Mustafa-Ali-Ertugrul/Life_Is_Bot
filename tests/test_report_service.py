@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus
-from app.services import reminder_service, report_service, user_service
+from app.services import reminder_service, report_service, step_service, user_service
 from app.services.event_labels import event_label
 from tests.conftest import TELEGRAM_USER_ID
 
@@ -350,3 +350,66 @@ async def test_weekly_report_uses_local_date_range(db_session: AsyncSession) -> 
     assert data["total"] == 1
     assert data["completed"] == 1
     assert data["week_start"] == week_start.isoformat()
+
+
+async def test_daily_report_includes_step_progress(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    await _event(
+        db_session,
+        user_id,
+        scheduled_at=_today(8),
+        status=ReminderStatus.POSITIVE,
+        related_id=1,
+        label="Su iç",
+    )
+    today = now_in().date()
+    await step_service.get_or_create_settings(db_session, user_id)
+    await step_service.update_daily_target(db_session, user_id, 8000)
+    await step_service.log_steps(db_session, user_id, 7500, today)
+
+    data = await report_service.generate_daily_report(db_session, user_id)
+
+    assert data["step_steps"] == 7500
+    assert data["step_goal"] == 8000
+
+
+async def test_daily_report_step_without_settings(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    await _event(
+        db_session,
+        user_id,
+        scheduled_at=_today(8),
+        status=ReminderStatus.POSITIVE,
+        related_id=1,
+        label="Su iç",
+    )
+
+    data = await report_service.generate_daily_report(db_session, user_id)
+
+    assert data["total"] == 1
+    assert data["step_steps"] is None
+    assert data["step_goal"] is None
+
+
+async def test_daily_report_step_goal_zero(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    today = now_in().date()
+    await step_service.get_or_create_settings(db_session, user_id)
+    await step_service.update_daily_target(db_session, user_id, 0)
+    await step_service.log_steps(db_session, user_id, 500, today)
+
+    data = await report_service.generate_daily_report(db_session, user_id)
+
+    assert data["step_steps"] == 500
+    assert data["step_goal"] == 0
+
+
+async def test_daily_report_step_log_without_settings_not_shown(db_session: AsyncSession) -> None:
+    user_id = await _user(db_session)
+    today = now_in().date()
+    await step_service.log_steps(db_session, user_id, 3000, today)
+
+    data = await report_service.generate_daily_report(db_session, user_id)
+
+    assert data["step_steps"] is None
+    assert data["step_goal"] is None
