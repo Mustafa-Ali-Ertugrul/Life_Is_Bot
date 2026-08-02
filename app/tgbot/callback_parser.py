@@ -13,6 +13,7 @@ class UICallbackKind(StrEnum):
     SPORT = "sport"
     SUPPLEMENT = "supplement"
     STEP = "step"
+    MEDICATION = "med"
     SETTINGS = "settings"
     REPORTS = "reports"
     HELP = "help"
@@ -59,6 +60,16 @@ class StepAction(StrEnum):
     DAYS = "days"
 
 
+class MedicationAction(StrEnum):
+    MENU = "menu"
+    LIST = "list"
+    NEW = "new"
+    DETAIL = "detail"
+    TOGGLE = "toggle"
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+
+
 class ReportAction(StrEnum):
     DAILY = "daily"
     WEEKLY = "weekly"
@@ -90,6 +101,8 @@ class UICallback:
     supplement_action: SupplementAction | None = None
     supplement_plan_id: int | None = None
     step_action: StepAction | None = None
+    medication_action: MedicationAction | None = None
+    medication_plan_id: int | None = None
     report_action: ReportAction | None = None
     settings_action: SettingsAction | None = None
 
@@ -131,6 +144,12 @@ def format_supplement_ui(action: SupplementAction, supplement_plan_id: int | Non
 
 def format_step_ui(action: StepAction) -> str:
     return f"{UI_PREFIX}{UICallbackKind.STEP.value}:{action.value}"
+
+
+def format_medication_ui(action: MedicationAction, plan_id: int | None = None) -> str:
+    if plan_id is None:
+        return f"{UI_PREFIX}{UICallbackKind.MEDICATION.value}:{action.value}"
+    return f"{UI_PREFIX}{UICallbackKind.MEDICATION.value}:{action.value}:{plan_id}"
 
 
 def format_report_ui(action: ReportAction) -> str:
@@ -221,6 +240,22 @@ def parse_ui(data: str) -> UICallback | None:
             step_action = StepAction(parts[1])
         except ValueError:
             return None
+    medication_action: MedicationAction | None = None
+    medication_plan_id: int | None = None
+    if kind is UICallbackKind.MEDICATION:
+        if len(parts) < 2:
+            return None
+        try:
+            medication_action = MedicationAction(parts[1])
+        except ValueError:
+            return None
+        if medication_action in (MedicationAction.DETAIL, MedicationAction.TOGGLE):
+            if len(parts) < 3:
+                return None
+            try:
+                medication_plan_id = int(parts[2])
+            except ValueError:
+                return None
     report_action: ReportAction | None = None
     if kind is UICallbackKind.REPORTS:
         if len(parts) >= 2:
@@ -245,6 +280,8 @@ def parse_ui(data: str) -> UICallback | None:
         supplement_action=supplement_action,
         supplement_plan_id=supplement_plan_id,
         step_action=step_action,
+        medication_action=medication_action,
+        medication_plan_id=medication_plan_id,
         report_action=report_action,
         settings_action=settings_action,
     )
