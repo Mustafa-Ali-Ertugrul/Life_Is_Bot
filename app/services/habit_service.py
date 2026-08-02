@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.schedule import parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, Habit, ReminderEvent, ReminderStatus, User
-from app.services import reminder_service
+from app.services import preference_service, reminder_service
 
 RELATED_TYPE = "habit"
 
@@ -32,6 +32,7 @@ async def create_habit(
     session.add(habit)
     await session.commit()
     await session.refresh(habit)
+    await preference_service.toggle_preference(session, user_id, BotKey.HABIT, enabled=True)
     return habit
 
 

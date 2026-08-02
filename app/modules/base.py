@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import now_in
 from app.models import BotKey, ReminderEvent, User
+from app.services import preference_service
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,11 +53,20 @@ class ReminderModule(ABC):
         users = list(result.scalars().all())
         created = 0
         for user in users:
-            events = await self.generate_daily_events(
-                session, EventGenerationContext(user=user, now_utc=now)
-            )
+            context = EventGenerationContext(user=user, now_utc=now)
+            if not await self.should_generate(session, context):
+                continue
+            events = await self.generate_daily_events(session, context)
             created += len(events)
         return created
+
+    async def should_generate(
+        self,
+        session: AsyncSession,
+        context: EventGenerationContext,
+    ) -> bool:
+        """Kullanıcı bu modül için preference açık mı? Default: preference gating."""
+        return await preference_service.is_enabled(session, context.user.id, self.bot_key)
 
     @abstractmethod
     def event_label(self, event: ReminderEvent) -> str | None: ...
