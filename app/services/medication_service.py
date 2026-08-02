@@ -96,6 +96,7 @@ async def update_medication_plan(
     start_date: date | None = None,
     end_date: date | None = None,
     notes: str | None = None,
+    is_active: bool | None = None,
 ) -> MedicationPlan:
     """Partially update a medication plan."""
     plan = await get_medication_plan(session, plan_id)
@@ -131,6 +132,8 @@ async def update_medication_plan(
         if len(notes) > MAX_NOTES_LENGTH:
             raise InvalidStateError("notes must be at most 500 characters")
         plan.notes = notes.strip() if notes else None
+    if is_active is not None:
+        plan.is_active = is_active
 
     if (
         plan.start_date is not None
