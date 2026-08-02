@@ -94,19 +94,23 @@ def _pct(steps: int, goal: int) -> int:
     return min(int(steps * 100 / goal), 999)
 
 
+def _format_thousands(value: int) -> str:
+    return f"{value:,}".replace(",", ".")
+
+
 def _menu_text(settings: StepSettings, today_steps: int | None) -> str:
     lines = [STEP_MENU_HEADER, ""]
     if today_steps is not None:
         lines.append(
             STEP_TODAY_PROGRESS.format(
-                steps=f"{today_steps:,}",
-                goal=f"{settings.daily_target:,}",
+                steps=_format_thousands(today_steps),
+                goal=_format_thousands(settings.daily_target),
                 pct=_pct(today_steps, settings.daily_target),
             )
         )
     else:
         lines.append(STEP_TODAY_EMPTY)
-    lines.append(STEP_GOAL_LINE.format(goal=f"{settings.daily_target:,}"))
+    lines.append(STEP_GOAL_LINE.format(goal=_format_thousands(settings.daily_target)))
     lines.append(
         STEP_REMINDER_LINE.format(
             time=_time_display(settings.reminder_hour, settings.reminder_minute)
@@ -122,7 +126,7 @@ def _settings_text(settings: StepSettings) -> str:
         [
             STEP_SETTINGS_HEADER,
             "",
-            STEP_SETTINGS_GOAL.format(goal=f"{settings.daily_target:,}"),
+            STEP_SETTINGS_GOAL.format(goal=_format_thousands(settings.daily_target)),
             STEP_SETTINGS_TIME.format(
                 time=_time_display(settings.reminder_hour, settings.reminder_minute)
             ),
@@ -244,14 +248,14 @@ async def step_ask_steps(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if existing is not None:
         msg = STEP_LOG_UPDATED.format(
-            steps=f"{steps:,}",
-            goal=f"{settings.daily_target:,}",
+            steps=_format_thousands(steps),
+            goal=_format_thousands(settings.daily_target),
             pct=_pct(steps, settings.daily_target),
         )
     else:
         msg = STEP_LOG_SAVED.format(
-            steps=f"{steps:,}",
-            goal=f"{settings.daily_target:,}",
+            steps=_format_thousands(steps),
+            goal=_format_thousands(settings.daily_target),
             pct=_pct(steps, settings.daily_target),
         )
     await update.effective_message.reply_text(msg)
@@ -285,7 +289,7 @@ async def step_ask_goal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     async with async_session_factory() as session:
         await step_service.update_daily_target(session, user_id, goal)
 
-    await update.effective_message.reply_text(STEP_GOAL_SAVED.format(goal=f"{goal:,}"))
+    await update.effective_message.reply_text(STEP_GOAL_SAVED.format(goal=_format_thousands(goal)))
     return ConversationHandler.END
 
 
