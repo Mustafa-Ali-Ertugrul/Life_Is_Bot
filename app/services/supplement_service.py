@@ -47,7 +47,7 @@ async def create_supplement_plan(
         is_active=True,
     )
     session.add(plan)
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     await preference_service.toggle_preference(session, user_id, BotKey.SUPPLEMENT, enabled=True)
     return plan
@@ -74,7 +74,7 @@ async def toggle_supplement_plan(
     if plan is None:
         return None
     plan.is_active = is_active
-    await session.commit()
+    await session.flush()
     await session.refresh(plan)
     return plan
 
