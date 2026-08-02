@@ -335,7 +335,7 @@ async def _toggle_bot(query: CallbackQuery, user_id: int, bot_key: BotKey) -> No
             preference = await preference_service.toggle_preference(
                 session, user_id, bot_key, not current_enabled
             )
-        except ValueError:
+        except PermissionDeniedError:
             await query.answer(CORE_BOT_CANNOT_BE_DISABLED, show_alert=True)
             return
     name = BOT_KEYS_TR[bot_key]

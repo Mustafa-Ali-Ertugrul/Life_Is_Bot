@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.errors import InvalidStateError
 from app.core.schedule import parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, ReminderEvent, SupplementPlan, User
@@ -30,9 +31,9 @@ async def create_supplement_plan(
 ) -> SupplementPlan:
     with_food = with_food.strip().lower()
     if with_food not in VALID_WITH_FOOD:
-        raise ValueError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
+        raise InvalidStateError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
     if start_date is not None and end_date is not None and start_date > end_date:
-        raise ValueError("start_date must not be after end_date")
+        raise InvalidStateError("start_date must not be after end_date")
     plan = SupplementPlan(
         user_id=user_id,
         name=name.strip(),

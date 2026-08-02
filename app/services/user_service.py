@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.errors import NotFoundError
 from app.core.timezone import now_in
 from app.models import TelegramAccount, User
 
@@ -71,7 +72,7 @@ async def count_active_users(session: AsyncSession) -> int:
 async def grant_consent(session: AsyncSession, user_id: int) -> User:
     user = await session.get(User, user_id)
     if user is None:
-        raise ValueError(f"Kullanıcı bulunamadı: {user_id}")
+        raise NotFoundError(f"Kullanıcı bulunamadı: {user_id}")
     if not user.consent_given:
         user.consent_given = True
         user.consented_at = now_in("UTC")

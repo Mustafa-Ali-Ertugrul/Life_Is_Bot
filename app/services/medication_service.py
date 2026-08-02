@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.errors import InvalidStateError, NotFoundError
 from app.core.schedule import parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, MedicationPlan, ReminderEvent, User
@@ -33,18 +34,18 @@ async def create_medication_plan(
 ) -> MedicationPlan:
     """Create a new medication plan and auto-activate the medication preference."""
     if not name or not name.strip():
-        raise ValueError("name must not be empty")
+        raise InvalidStateError("name must not be empty")
     if not 0 <= target_hour <= 23:
-        raise ValueError("target_hour must be between 0 and 23")
+        raise InvalidStateError("target_hour must be between 0 and 23")
     if not 0 <= target_minute <= 59:
-        raise ValueError("target_minute must be between 0 and 59")
+        raise InvalidStateError("target_minute must be between 0 and 59")
     with_food = with_food.strip().lower()
     if with_food not in VALID_WITH_FOOD:
-        raise ValueError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
+        raise InvalidStateError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
     if start_date is not None and end_date is not None and start_date > end_date:
-        raise ValueError("start_date must not be after end_date")
+        raise InvalidStateError("start_date must not be after end_date")
     if notes is not None and len(notes) > MAX_NOTES_LENGTH:
-        raise ValueError("notes must be at most 500 characters")
+        raise InvalidStateError("notes must be at most 500 characters")
 
     plan = MedicationPlan(
         user_id=user_id,
@@ -99,26 +100,26 @@ async def update_medication_plan(
     """Partially update a medication plan."""
     plan = await get_medication_plan(session, plan_id)
     if plan is None:
-        raise ValueError(f"MedicationPlan {plan_id} not found")
+        raise NotFoundError(f"MedicationPlan {plan_id} not found")
 
     if name is not None:
         if not name.strip():
-            raise ValueError("name must not be empty")
+            raise InvalidStateError("name must not be empty")
         plan.name = name.strip()
     if dose is not None:
         plan.dose = dose.strip() if dose else None
     if with_food is not None:
         normalized = with_food.strip().lower()
         if normalized not in VALID_WITH_FOOD:
-            raise ValueError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
+            raise InvalidStateError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
         plan.with_food = normalized
     if target_hour is not None:
         if not 0 <= target_hour <= 23:
-            raise ValueError("target_hour must be between 0 and 23")
+            raise InvalidStateError("target_hour must be between 0 and 23")
         plan.target_hour = target_hour
     if target_minute is not None:
         if not 0 <= target_minute <= 59:
-            raise ValueError("target_minute must be between 0 and 59")
+            raise InvalidStateError("target_minute must be between 0 and 59")
         plan.target_minute = target_minute
     if days_of_week is not None:
         plan.days_of_week = days_of_week
@@ -128,7 +129,7 @@ async def update_medication_plan(
         plan.end_date = end_date
     if notes is not None:
         if len(notes) > MAX_NOTES_LENGTH:
-            raise ValueError("notes must be at most 500 characters")
+            raise InvalidStateError("notes must be at most 500 characters")
         plan.notes = notes.strip() if notes else None
 
     if (
@@ -136,7 +137,7 @@ async def update_medication_plan(
         and plan.end_date is not None
         and plan.start_date > plan.end_date
     ):
-        raise ValueError("start_date must not be after end_date")
+        raise InvalidStateError("start_date must not be after end_date")
 
     await session.commit()
     await session.refresh(plan)
@@ -148,7 +149,7 @@ async def toggle_medication_plan(
 ) -> MedicationPlan:
     plan = await get_medication_plan(session, plan_id)
     if plan is None:
-        raise ValueError(f"MedicationPlan {plan_id} not found")
+        raise NotFoundError(f"MedicationPlan {plan_id} not found")
     plan.is_active = is_active
     await session.commit()
     await session.refresh(plan)

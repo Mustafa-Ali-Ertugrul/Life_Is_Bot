@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import InvalidStateError, NotFoundError
 from app.core.timezone import get_user_timezone
 from app.models import BotKey
 from app.services import medication_service, preference_service, user_service
@@ -65,14 +66,14 @@ async def test_create_medication_plan_normalizes_with_food(db_session: AsyncSess
 async def test_create_medication_plan_rejects_empty_name(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(db_session, user_id, "  ", 8, 0, "1,3,5")
 
 
 async def test_create_medication_plan_rejects_invalid_hour(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(
             db_session, user_id, "Metformin", 24, 0, "1,3,5"
         )
@@ -81,7 +82,7 @@ async def test_create_medication_plan_rejects_invalid_hour(db_session: AsyncSess
 async def test_create_medication_plan_rejects_invalid_minute(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(
             db_session, user_id, "Metformin", 8, 60, "1,3,5"
         )
@@ -90,7 +91,7 @@ async def test_create_medication_plan_rejects_invalid_minute(db_session: AsyncSe
 async def test_create_medication_plan_rejects_invalid_with_food(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(
             db_session, user_id, "Metformin", 8, 0, "1,3,5", with_food="breakfast"
         )
@@ -101,7 +102,7 @@ async def test_create_medication_plan_rejects_inverted_date_range(
 ) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(
             db_session,
             user_id,
@@ -117,7 +118,7 @@ async def test_create_medication_plan_rejects_inverted_date_range(
 async def test_create_medication_plan_rejects_long_notes(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.create_medication_plan(
             db_session, user_id, "Metformin", 8, 0, "1,3,5", notes="x" * 501
         )
@@ -189,7 +190,7 @@ async def test_update_medication_plan_partial(db_session: AsyncSession) -> None:
 
 
 async def test_update_medication_plan_missing_raises(db_session: AsyncSession) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(NotFoundError):
         await medication_service.update_medication_plan(db_session, 99999, name="X")
 
 
@@ -199,7 +200,7 @@ async def test_update_medication_plan_rejects_inverted_date_range(db_session: As
         db_session, user_id, "Metformin", 8, 0, "1,3,5"
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await medication_service.update_medication_plan(
             db_session,
             plan.id,
@@ -220,7 +221,7 @@ async def test_toggle_medication_plan(db_session: AsyncSession) -> None:
 
 
 async def test_toggle_medication_plan_missing_raises(db_session: AsyncSession) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(NotFoundError):
         await medication_service.toggle_medication_plan(db_session, 99999, False)
 
 

@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import PermissionDeniedError
 from app.core.timezone import now_in
 from app.models import BotKey, BotPreference
 
@@ -51,7 +52,7 @@ async def toggle_preference(
     session: AsyncSession, user_id: int, bot_key: BotKey, enabled: bool
 ) -> BotPreference:
     if bot_key is BotKey.CORE:
-        raise ValueError(CORE_BOT_CANNOT_BE_DISABLED)
+        raise PermissionDeniedError(CORE_BOT_CANNOT_BE_DISABLED)
 
     preference = await get_or_create_preference(session, user_id, bot_key)
     preference.enabled = enabled

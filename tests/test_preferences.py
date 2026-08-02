@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import PermissionDeniedError
 from app.models import BotKey
 from app.services import preference_service, user_service
 from tests.conftest import TELEGRAM_USER_ID
@@ -36,7 +37,7 @@ async def test_toggle_disables_bot(db_session: AsyncSession) -> None:
 async def test_core_bot_cannot_be_toggled(db_session: AsyncSession) -> None:
     user_id = await _create_user(db_session)
 
-    with pytest.raises(ValueError, match="Ana bot kapatılamaz"):
+    with pytest.raises(PermissionDeniedError, match="Ana bot kapatılamaz"):
         await preference_service.toggle_preference(db_session, user_id, BotKey.CORE, enabled=True)
 
 

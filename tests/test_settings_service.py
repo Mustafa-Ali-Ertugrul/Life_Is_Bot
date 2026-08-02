@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import InvalidStateError, NotFoundError
 from app.models import User
 from app.services import settings_service, user_service
 from tests.conftest import TELEGRAM_USER_ID
@@ -21,7 +22,7 @@ async def test_default_settings(db_session: AsyncSession) -> None:
 
 
 async def test_get_settings_raises_for_missing_user(db_session: AsyncSession) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(NotFoundError):
         await settings_service.get_settings(db_session, 999_999)
 
 
@@ -53,7 +54,7 @@ async def test_update_timezone_valid(db_session: AsyncSession) -> None:
 async def test_update_timezone_invalid_raises(db_session: AsyncSession) -> None:
     user = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await settings_service.update_timezone(db_session, user.id, "Mars/Olympus")
 
     assert user.timezone == "Europe/Istanbul"
@@ -84,9 +85,9 @@ async def test_set_quiet_hours_valid(db_session: AsyncSession) -> None:
 async def test_set_quiet_hours_invalid_raises(db_session: AsyncSession) -> None:
     user = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await settings_service.set_quiet_hours(db_session, user.id, "23:00", "07:60")
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await settings_service.set_quiet_hours(db_session, user.id, "24:00", "07:00")
 
     assert user.quiet_hours_enabled is False

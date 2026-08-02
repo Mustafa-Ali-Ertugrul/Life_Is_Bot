@@ -3,6 +3,7 @@ from datetime import UTC, date
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import InvalidStateError
 from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey
 from app.services import preference_service, step_service, user_service
@@ -70,7 +71,7 @@ async def test_update_daily_target_rejects_out_of_range(
 ) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await step_service.update_daily_target(db_session, user_id, bad_target)
 
 
@@ -90,7 +91,7 @@ async def test_update_reminder_time_rejects_invalid(
 ) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await step_service.update_reminder_time(db_session, user_id, bad_hour, bad_minute)
 
 
@@ -133,7 +134,7 @@ async def test_log_steps_updates_same_day(db_session: AsyncSession) -> None:
 async def test_log_steps_rejects_out_of_range(db_session: AsyncSession, bad_steps: int) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await step_service.log_steps(db_session, user_id, bad_steps, now_in().date())
 
 

@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import NotFoundError
 from app.models import BotKey, ConsentRequirement, consent_requirement_for
 from app.services import user_service
 from tests.conftest import TELEGRAM_USER_ID
@@ -28,7 +29,7 @@ async def test_grant_consent_idempotent(db_session: AsyncSession) -> None:
 
 
 async def test_grant_consent_unknown_user_raises(db_session: AsyncSession) -> None:
-    with pytest.raises(ValueError, match="Kullanıcı bulunamadı"):
+    with pytest.raises(NotFoundError, match="Kullanıcı bulunamadı"):
         await user_service.grant_consent(db_session, 999_999)
 
 
