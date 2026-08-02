@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.errors import InvalidStateError, NotFoundError
 from app.core.schedule import parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, Habit, ReminderEvent, ReminderStatus, User
@@ -53,6 +54,43 @@ async def toggle_habit(session: AsyncSession, habit_id: int, is_active: bool) ->
     if habit is None:
         return None
     habit.is_active = is_active
+    await session.flush()
+    await session.refresh(habit)
+    return habit
+
+
+async def update_habit(
+    session: AsyncSession,
+    habit_id: int,
+    *,
+    name: str | None = None,
+    target_hour: int | None = None,
+    target_minute: int | None = None,
+    days_of_week: str | None = None,
+    is_active: bool | None = None,
+) -> Habit:
+    """Partially update a habit."""
+    habit = await get_habit(session, habit_id)
+    if habit is None:
+        raise NotFoundError(f"Habit {habit_id} not found")
+
+    if name is not None:
+        if not name.strip():
+            raise InvalidStateError("name must not be empty")
+        habit.name = name.strip()
+    if target_hour is not None:
+        if not 0 <= target_hour <= 23:
+            raise InvalidStateError("target_hour must be between 0 and 23")
+        habit.target_hour = target_hour
+    if target_minute is not None:
+        if not 0 <= target_minute <= 59:
+            raise InvalidStateError("target_minute must be between 0 and 59")
+        habit.target_minute = target_minute
+    if days_of_week is not None:
+        habit.days_of_week = days_of_week
+    if is_active is not None:
+        habit.is_active = is_active
+
     await session.flush()
     await session.refresh(habit)
     return habit
@@ -126,4 +164,5 @@ __all__ = [
     "list_habits",
     "parse_days",
     "toggle_habit",
+    "update_habit",
 ]

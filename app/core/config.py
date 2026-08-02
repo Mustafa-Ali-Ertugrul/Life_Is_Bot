@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     api_cors_origins: list[str] = ["*"]
+    api_auth_max_age: int = 86400
+    api_key: str = ""
 
 
 @lru_cache
