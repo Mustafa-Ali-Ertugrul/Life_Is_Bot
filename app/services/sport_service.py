@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.schedule import parse_days
-from app.core.timezone import get_user_timezone, now_in
+from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, ReminderEvent, ReminderStatus, SportPlan, User
 from app.services import preference_service, reminder_service
 
@@ -82,7 +82,7 @@ async def generate_today_events(
             second=0,
             microsecond=0,
         )
-        scheduled_at = local_scheduled.astimezone(UTC)
+        scheduled_at = to_utc_scheduled(local_scheduled)
         event = await reminder_service.create_event(
             session,
             user_id=user_id,
