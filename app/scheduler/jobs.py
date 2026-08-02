@@ -65,6 +65,14 @@ async def reminder_tick() -> None:
             message_id = await send_reminder(bot, event)
             if message_id is None:
                 logger.warning("reminder send failed, will retry", event_id=event.id)
+                await notification_service.log_notification(
+                    session,
+                    user_id=event.user_id,
+                    reminder_event_id=event.id,
+                    message=f"reminder {event.id}",
+                    channel="telegram",
+                    status=NotificationLogStatus.FAILED.value,
+                )
                 continue
             notified = await reminder_service.mark_notified(session, event.id)
             if not notified:
@@ -89,3 +97,18 @@ async def daily_events_job() -> None:
             created = await module.generate_daily_events_for_all(session, now_utc=now)
             total += created
     logger.info("daily events job done", created_count=total)
+
+
+async def notification_retry_job() -> None:
+    from app.scheduler.engine import get_bot
+
+    bot = get_bot()
+    if bot is None:
+        logger.warning("notification retry skipped, no bot instance")
+        return
+    async with async_session_factory() as session:
+        processed = await notification_service.retry_failed_notifications(
+            session, bot, send_reminder
+        )
+    if processed:
+        logger.info("notification retry done", count=processed)
