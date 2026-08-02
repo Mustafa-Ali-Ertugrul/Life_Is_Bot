@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import Bot
 
@@ -49,8 +49,11 @@ async def retry_failed_notifications(
         select(NotificationLog)
         .where(
             NotificationLog.status == NotificationLogStatus.FAILED.value,
-            NotificationLog.next_retry_at <= now,
             NotificationLog.retry_count < settings.notification_max_retries,
+            or_(
+                NotificationLog.next_retry_at.is_(None),
+                NotificationLog.next_retry_at <= now,
+            ),
         )
         .limit(settings.notification_retry_batch_size)
     )
@@ -58,6 +61,11 @@ async def retry_failed_notifications(
 
     processed = 0
     for log in logs:
+        if log.reminder_event_id is None:
+            log.status = NotificationLogStatus.ABANDONED.value
+            log.next_retry_at = None
+            processed += 1
+            continue
         event = await session.get(ReminderEvent, log.reminder_event_id)
         if event is None:
             log.status = NotificationLogStatus.ABANDONED.value
