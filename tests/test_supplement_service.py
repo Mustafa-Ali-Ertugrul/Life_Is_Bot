@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import InvalidStateError
 from app.core.timezone import get_user_timezone, now_in
 from app.models import BotKey, ReminderEvent, ReminderStatus
 from app.services import preference_service, supplement_service, user_service
@@ -57,7 +58,7 @@ async def test_create_supplement_plan_normalizes_with_food(db_session: AsyncSess
 async def test_create_supplement_plan_rejects_invalid_with_food(db_session: AsyncSession) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await supplement_service.create_supplement_plan(
             db_session, user_id, "Demir", "1,2,3,4,5", 12, 0, with_food="breakfast"
         )
@@ -68,7 +69,7 @@ async def test_create_supplement_plan_rejects_inverted_date_range(
 ) -> None:
     user_id = await _user(db_session)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidStateError):
         await supplement_service.create_supplement_plan(
             db_session,
             user_id,
