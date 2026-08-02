@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     api_cors_origins: list[str] = ["*"]
     api_auth_max_age: int = 86400
     api_key: str = ""
+    backup_enabled: bool = True
+    backup_dir: str = "backups"
+    backup_retention_days: int = 30
+    reports_dir: str = "reports"
+    auto_monthly_report: bool = True
+    purge_enabled: bool = False
+    data_retention_months: int = 1
 
 
 @lru_cache

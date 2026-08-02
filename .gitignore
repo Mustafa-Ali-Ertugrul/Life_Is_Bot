@@ -15,6 +15,10 @@ __pycache__/
 *.db-shm
 *.db-wal
 
+# Yedekler ve raporlar
+backups/
+reports/
+
 # Loglar
 *.log
 
