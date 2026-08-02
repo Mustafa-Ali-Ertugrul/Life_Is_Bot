@@ -1,3 +1,5 @@
+from calendar import monthrange
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import TypedDict
 from zoneinfo import ZoneInfo
@@ -31,6 +33,56 @@ class WeeklyReport(TypedDict):
     compliance_rate: int
     best_day: int | None
     weakest_day: int | None
+
+
+@dataclass(frozen=True)
+class BotMonthlyStats:
+    bot_key: str
+    total: int
+    completed: int
+    missed: int
+    snoozed: int
+    pending: int
+
+    @property
+    def completion_rate(self) -> float:
+        if self.total == 0:
+            return 0.0
+        return round(self.completed * 100 / self.total, 1)
+
+
+@dataclass(frozen=True)
+class MonthlyReport:
+    user_id: int
+    year: int
+    month: int
+    bot_stats: list[BotMonthlyStats] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return sum(s.total for s in self.bot_stats)
+
+    @property
+    def total_completed(self) -> int:
+        return sum(s.completed for s in self.bot_stats)
+
+    @property
+    def total_missed(self) -> int:
+        return sum(s.missed for s in self.bot_stats)
+
+    @property
+    def total_snoozed(self) -> int:
+        return sum(s.snoozed for s in self.bot_stats)
+
+    @property
+    def total_pending(self) -> int:
+        return sum(s.pending for s in self.bot_stats)
+
+    @property
+    def completion_rate(self) -> float:
+        if self.total == 0:
+            return 0.0
+        return round(self.total_completed * 100 / self.total, 1)
 
 
 async def generate_daily_report(
@@ -109,6 +161,47 @@ async def generate_weekly_report(
     )
 
 
+async def generate_monthly_report(
+    session: AsyncSession,
+    user_id: int,
+    year: int,
+    month: int,
+) -> MonthlyReport:
+    _, last_day = monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, last_day) + timedelta(days=1)
+
+    per_bot: dict[str, dict[str, int]] = {}
+    for event in await _events_for_local_date_range(session, user_id, month_start, month_end):
+        counts = per_bot.setdefault(
+            event.bot_key,
+            {"total": 0, "completed": 0, "missed": 0, "snoozed": 0, "pending": 0},
+        )
+        counts["total"] += 1
+        status = event.status
+        if status == ReminderStatus.POSITIVE.value:
+            counts["completed"] += 1
+        elif status == ReminderStatus.NEGATIVE.value:
+            counts["missed"] += 1
+        elif status == ReminderStatus.SNOOZED.value:
+            counts["snoozed"] += 1
+        else:
+            counts["pending"] += 1
+
+    bot_stats = [
+        BotMonthlyStats(
+            bot_key=bot_key,
+            total=counts["total"],
+            completed=counts["completed"],
+            missed=counts["missed"],
+            snoozed=counts["snoozed"],
+            pending=counts["pending"],
+        )
+        for bot_key, counts in sorted(per_bot.items())
+    ]
+    return MonthlyReport(user_id=user_id, year=year, month=month, bot_stats=bot_stats)
+
+
 async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
     result = await session.execute(select(User.timezone).where(User.id == user_id))
     name = result.scalar_one_or_none()
@@ -174,8 +267,11 @@ def _weakest_day(per_day: dict[int, list[int]]) -> int | None:
 
 
 __all__ = [
+    "BotMonthlyStats",
     "DailyReport",
+    "MonthlyReport",
     "WeeklyReport",
     "generate_daily_report",
+    "generate_monthly_report",
     "generate_weekly_report",
 ]

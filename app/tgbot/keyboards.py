@@ -391,7 +391,26 @@ def report_menu() -> InlineKeyboardMarkup:
                 "📈 Haftalık", callback_data=format_report_ui(ReportAction.WEEKLY)
             ),
         ],
+        [InlineKeyboardButton("📊 Aylık", callback_data=format_report_ui(ReportAction.MONTHLY))],
         [InlineKeyboardButton("◀️ Ana Menü", callback_data=format_ui(UICallbackKind.MAIN_MENU))],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def monthly_report_nav(year: int, month: int) -> InlineKeyboardMarkup:
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "◀️ Önceki Ay",
+                callback_data=format_report_ui(ReportAction.MONTHLY_NAV, prev_year, prev_month),
+            ),
+            InlineKeyboardButton(
+                "Sonraki Ay ▶️",
+                callback_data=format_report_ui(ReportAction.MONTHLY_NAV, next_year, next_month),
+            ),
+        ],
     ]
     return InlineKeyboardMarkup(keyboard)
 
