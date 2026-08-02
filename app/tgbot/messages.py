@@ -379,6 +379,17 @@ BOT_KEYS_TR: dict[BotKey, str] = {
     BotKey.MEDICATION: "İlaç",
 }
 
+ABANDONED_SINGLE = (
+    "⚠️ {bot_name} hatırlatmanız gönderilemedi.\n\n"
+    "Birden fazla deneme başarısız oldu. "
+    "Bağlantınızı kontrol edin veya botu yeniden başlatın."
+)
+ABANDONED_MULTIPLE = (
+    "⚠️ {count} hatırlatma gönderilemedi.\n\n"
+    "Etkilenen botlar: {bot_names}\n"
+    "Bağlantınızı kontrol edin veya botu yeniden başlatın."
+)
+
 COMMANDS = [
     ("start", "Ana menüyü aç"),
     ("botlar", "Botları yönet"),

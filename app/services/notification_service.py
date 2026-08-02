@@ -3,11 +3,13 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from telegram import Bot
 
 from app.core.config import settings
 from app.core.timezone import now_in
-from app.models import NotificationLog, NotificationLogStatus, ReminderEvent
+from app.models import BotKey, NotificationLog, NotificationLogStatus, ReminderEvent, User
+from app.tgbot.messages import ABANDONED_MULTIPLE, ABANDONED_SINGLE, BOT_KEYS_TR
 
 
 async def log_notification(
@@ -90,8 +92,72 @@ async def retry_failed_notifications(
     return processed
 
 
+async def notify_abandoned(
+    session: AsyncSession,
+    bot: Bot,
+    send_fn: Callable[[Bot, str, str], Awaitable[str | None]],
+) -> int:
+    """Abandoned bildirimler için kullanıcıya bir kez bilgi mesajı gönderir.
+
+    Best-effort: gönderim fail olsa bile abandoned_notified işaretlenir (spam önleme).
+    Kullanıcı başına tek mesaj. notification_logs'a yazılmaz (sonsuz döngü yok).
+    """
+    stmt = (
+        select(NotificationLog)
+        .where(
+            NotificationLog.status == NotificationLogStatus.ABANDONED.value,
+            NotificationLog.abandoned_notified.is_(False),
+        )
+        .limit(settings.notification_retry_batch_size)
+    )
+    logs = list((await session.execute(stmt)).scalars().all())
+    if not logs:
+        return 0
+
+    by_user: dict[int, list[NotificationLog]] = {}
+    for log in logs:
+        by_user.setdefault(log.user_id, []).append(log)
+
+    notified = 0
+    for user_id, user_logs in by_user.items():
+        user = await session.get(User, user_id, options=[selectinload(User.telegram_account)])
+        chat_id = (
+            user.telegram_account.telegram_user_id
+            if user is not None and user.telegram_account is not None
+            else None
+        )
+        text = await _format_abandoned(session, user_logs)
+        sent = await send_fn(bot, chat_id, text) if chat_id is not None else None
+        for log in user_logs:
+            log.abandoned_notified = True
+        if sent is not None:
+            notified += 1
+
+    await session.commit()
+    return notified
+
+
+async def _format_abandoned(session: AsyncSession, logs: list[NotificationLog]) -> str:
+    names: list[str] = []
+    for log in logs:
+        if log.reminder_event_id is None:
+            continue
+        event = await session.get(ReminderEvent, log.reminder_event_id)
+        if event is None:
+            continue
+        name = BOT_KEYS_TR[BotKey(event.bot_key)]
+        if name not in names:
+            names.append(name)
+    if len(logs) == 1:
+        return ABANDONED_SINGLE.format(bot_name=names[0] if names else "hatırlatma")
+    bot_names = ", ".join(sorted(names)) if names else "çeşitli"
+    return ABANDONED_MULTIPLE.format(count=len(logs), bot_names=bot_names)
+
+
 __all__ = [
     "_compute_next_retry",
+    "_format_abandoned",
     "log_notification",
+    "notify_abandoned",
     "retry_failed_notifications",
 ]

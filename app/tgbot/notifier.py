@@ -58,3 +58,13 @@ async def send_reminder(bot: Bot, event: ReminderEvent) -> str | None:
     except Exception:
         logger.exception("failed to send reminder", event_id=event.id)
         return None
+
+
+async def send_plain_text(bot: Bot, chat_id: str, text: str) -> str | None:
+    """Düz metin gönderir; notification_logs'a yazmaz (retry/abandoned döngüsü yok)."""
+    try:
+        message = await bot.send_message(chat_id=chat_id, text=text)
+        return str(message.message_id)
+    except Exception:
+        logger.exception("failed to send plain text", chat_id=chat_id)
+        return None
