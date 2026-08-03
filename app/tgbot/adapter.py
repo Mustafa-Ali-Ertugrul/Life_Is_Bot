@@ -23,7 +23,7 @@ from app.tgbot.medication_handlers import (
 )
 from app.tgbot.messages import COMMANDS
 from app.tgbot.onboarding_handlers import onboarding_conversation
-from app.tgbot.report_handlers import cmd_monthly_report, cmd_rapor
+from app.tgbot.report_handlers import cmd_monthly_report, cmd_rapor, cmd_yearly_report
 from app.tgbot.settings_handlers import cmd_ayarlar, settings_conversation
 from app.tgbot.sport_handlers import sport_conversation, sport_list_command, sport_menu_command
 from app.tgbot.step_handlers import step_conversation, step_menu_command
@@ -59,6 +59,7 @@ def build_application() -> ApplicationT:
     application.add_handler(CommandHandler("ayarlar", cmd_ayarlar))
     application.add_handler(CommandHandler("rapor", cmd_rapor))
     application.add_handler(CommandHandler("aylik_rapor", cmd_monthly_report))
+    application.add_handler(CommandHandler("yillik_rapor", cmd_yearly_report))
     application.add_handler(CommandHandler("yardim", cmd_yardim))
     application.add_handler(habit_conversation())
     application.add_handler(settings_conversation())

@@ -5,7 +5,7 @@ from app.core.database import unit_of_work
 from app.core.timezone import now_in
 from app.models import BotKey
 from app.services import report_service, settings_service
-from app.services.report_service import DailyReport, MonthlyReport, WeeklyReport
+from app.services.report_service import DailyReport, MonthlyReport, WeeklyReport, YearlyReport
 from app.tgbot.callback_parser import ReportAction, UICallback
 from app.tgbot.keyboards import monthly_report_nav, report_menu
 from app.tgbot.messages import (
@@ -31,6 +31,14 @@ from app.tgbot.messages import (
     REPORT_WEAKEST_DAY,
     REPORT_WEEKLY_TITLE,
     WEEKDAY_NAMES_TR,
+    YEARLY_REPORT_BEST_MONTH,
+    YEARLY_REPORT_EMPTY,
+    YEARLY_REPORT_HEADER,
+    YEARLY_REPORT_INVALID_ARG,
+    YEARLY_REPORT_MONTH_EMPTY,
+    YEARLY_REPORT_MONTH_LINE,
+    YEARLY_REPORT_OVERALL,
+    YEARLY_REPORT_WORST_MONTH,
 )
 
 
@@ -70,6 +78,21 @@ async def cmd_monthly_report(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         year, month = await _current_year_month(user_id)
     text, keyboard = await _monthly_payload(user_id, year, month)
+    await update.effective_message.reply_text(text, reply_markup=keyboard)
+
+
+async def cmd_yearly_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.effective_message is not None
+    user_id = await _ensure_user_id(context, update)
+    args = context.args or []
+    if args:
+        year = _parse_year_arg(args)
+        if year is None:
+            await update.effective_message.reply_text(YEARLY_REPORT_INVALID_ARG)
+            return
+    else:
+        year, _ = await _current_year_month(user_id)
+    text, keyboard = await _yearly_payload(user_id, year)
     await update.effective_message.reply_text(text, reply_markup=keyboard)
 
 
@@ -125,10 +148,28 @@ def _parse_month_arg(args: list[str]) -> tuple[int, int] | None:
     return year, month
 
 
+def _parse_year_arg(args: list[str]) -> int | None:
+    if len(args) != 1:
+        return None
+    try:
+        year = int(args[0])
+    except ValueError:
+        return None
+    if not 2000 <= year <= 2100:
+        return None
+    return year
+
+
 async def _monthly_payload(user_id: int, year: int, month: int) -> tuple[str, InlineKeyboardMarkup]:
     async with unit_of_work() as session:
         report = await report_service.generate_monthly_report(session, user_id, year, month)
     return _format_monthly_report(report), monthly_report_nav(year, month)
+
+
+async def _yearly_payload(user_id: int, year: int) -> tuple[str, InlineKeyboardMarkup]:
+    async with unit_of_work() as session:
+        report = await report_service.generate_yearly_report(session, user_id, year)
+    return _format_yearly_report(report), report_menu()
 
 
 def _format_monthly_report(report: MonthlyReport) -> str:
@@ -164,6 +205,50 @@ def _format_monthly_report(report: MonthlyReport) -> str:
             pending=report.total_pending,
         )
     )
+    return "\n".join(lines)
+
+
+def _format_yearly_report(report: YearlyReport) -> str:
+    if report.total == 0:
+        return YEARLY_REPORT_EMPTY.format(year=report.year)
+    lines = [
+        YEARLY_REPORT_HEADER.format(year=report.year),
+        "",
+        YEARLY_REPORT_OVERALL.format(
+            rate=f"{report.completion_rate:.0f}",
+            completed=report.total_completed,
+            total=report.total,
+        ),
+        "",
+    ]
+    for month in report.monthly:
+        month_label = MONTHS_TR[month.month - 1]
+        if month.total == 0:
+            lines.append(YEARLY_REPORT_MONTH_EMPTY.format(month=month_label))
+        else:
+            lines.append(
+                YEARLY_REPORT_MONTH_LINE.format(
+                    month=month_label,
+                    rate=f"{month.completion_rate:.0f}",
+                    completed=month.completed,
+                    total=month.total,
+                )
+            )
+    if report.best_month is not None:
+        lines.append("")
+        lines.append(
+            YEARLY_REPORT_BEST_MONTH.format(
+                month=MONTHS_TR[report.best_month.month - 1],
+                rate=f"{report.best_month.completion_rate:.0f}",
+            )
+        )
+    if report.worst_month is not None:
+        lines.append(
+            YEARLY_REPORT_WORST_MONTH.format(
+                month=MONTHS_TR[report.worst_month.month - 1],
+                rate=f"{report.worst_month.completion_rate:.0f}",
+            )
+        )
     return "\n".join(lines)
 
 
@@ -232,5 +317,6 @@ def _weekday_name(weekday: int | None) -> str:
 __all__ = [
     "cmd_monthly_report",
     "cmd_rapor",
+    "cmd_yearly_report",
     "show_report",
 ]

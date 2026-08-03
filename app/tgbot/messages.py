@@ -55,6 +55,7 @@ HELP = (
     "/ayarlar - Ayarları göster\n"
     "/rapor - Raporları göster\n"
     "/aylik_rapor - Aylık rapor göster\n"
+    "/yillik_rapor - Yıllık rapor göster\n"
     "/yardim - Bu yardım menüsü"
 )
 
@@ -146,6 +147,15 @@ MONTHLY_REPORT_LEGEND = (
     "✅ Tamamlanan: {completed} | ❌ Kaçırılan: {missed} | ⏳ Bekleyen: {pending}"
 )
 MONTHLY_REPORT_INVALID_ARG = "❌ Geçersiz format. Kullanım: /aylik_rapor veya /aylik_rapor 2026-08"
+
+YEARLY_REPORT_HEADER = "📊 Yıllık Rapor — {year}"
+YEARLY_REPORT_EMPTY = "📊 {year}\n\nBu yıl için henüz veri yok."
+YEARLY_REPORT_OVERALL = "🎯 Genel Tamamlama: %{rate} ({completed}/{total})"
+YEARLY_REPORT_MONTH_LINE = "{month}: %{rate} ({completed}/{total})"
+YEARLY_REPORT_MONTH_EMPTY = "{month}: Veri yok"
+YEARLY_REPORT_BEST_MONTH = "🏆 En iyi ay: {month} (%{rate})"
+YEARLY_REPORT_WORST_MONTH = "📉 En zayıf ay: {month} (%{rate})"
+YEARLY_REPORT_INVALID_ARG = "❌ Geçersiz yıl. Kullanım: /yillik_rapor veya /yillik_rapor 2026"
 
 MONTHS_TR = [
     "Ocak",
@@ -445,5 +455,6 @@ COMMANDS = [
     ("ayarlar", "Ayarları göster"),
     ("rapor", "Raporları göster"),
     ("aylik_rapor", "Aylık rapor göster"),
+    ("yillik_rapor", "Yıllık rapor göster"),
     ("yardim", "Yardım menüsü"),
 ]
