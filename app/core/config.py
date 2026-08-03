@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     auto_monthly_report: bool = True
     purge_enabled: bool = False
     data_retention_months: int = 1
+    rate_limit_enabled: bool = True
+    rate_limit_crud_per_minute: int = 60
+    rate_limit_reports_per_minute: int = 30
+    rate_limit_storage_uri: str = "memory://"
 
 
 @lru_cache
