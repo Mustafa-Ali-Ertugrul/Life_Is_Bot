@@ -10,6 +10,7 @@ from app.scheduler.jobs import (
     abandoned_notification_job,
     daily_backup_job,
     daily_events_job,
+    monthly_purge_job,
     monthly_report_job,
     notification_digest_job,
     notification_retry_job,
@@ -60,6 +61,14 @@ def setup_scheduler() -> AsyncIOScheduler:
         hour=23,
         minute=50,
         id="monthly_report_auto",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        monthly_purge_job,
+        trigger="cron",
+        hour=23,
+        minute=55,
+        id="monthly_purge",
         replace_existing=True,
     )
     scheduler.add_job(

@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import timedelta
 from itertools import batched
 
@@ -13,6 +14,7 @@ from app.services import (
     backup_service,
     notification_service,
     preference_service,
+    purge_service,
     reminder_service,
     report_service,
     user_service,
@@ -230,6 +232,28 @@ async def monthly_report_job() -> None:
                 sent = await send_plain_text(bot, account.telegram_user_id, content)
                 if sent is None:
                     logger.warning("monthly report send failed", user_id=user.id)
+
+
+async def monthly_purge_job() -> None:
+    """End of month: purge old data after the monthly report, then VACUUM."""
+    if not settings.purge_enabled:
+        return
+
+    today = now_in(settings.timezone).date()
+    if (today + timedelta(days=1)).month == today.month:
+        return  # Son gün değil
+
+    size_before = purge_service.db_size()
+    async with unit_of_work() as session:
+        stats = await purge_service.purge_old_data(session, today)
+    size_after = await purge_service.vacuum_database()
+
+    logger.info(
+        "monthly purge completed",
+        **asdict(stats),
+        size_before=size_before,
+        size_after=size_after,
+    )
 
 
 def format_report_markdown(report: report_service.MonthlyReport) -> str:
