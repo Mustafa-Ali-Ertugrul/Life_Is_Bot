@@ -55,6 +55,62 @@ uv run alembic upgrade head
 uv run python -m app.main
 ```
 
+### Docker (production)
+
+```bash
+# 1. .env oluştur ve BOT_TOKEN doldur
+cp .env.example .env
+
+# 2. Image build et ve başlat (migrate + bot + api)
+docker compose up -d --build
+
+# 3. Logları gör
+docker compose logs -f bot
+
+# 4. Health check
+curl http://localhost:8000/health
+```
+
+Üç servis: `migrate` (tek seferlik migration), `bot` (polling, varsayılan), `api` (REST + healthcheck). Veriler `./data/`, yedekler `./backups/`, raporlar `./reports/` dizinlerinde volume olarak saklanır.
+
+#### Webhook Mode (production, public URL gerekli)
+
+```bash
+# .env içinde:
+# WEBHOOK_MODE=True
+# TELEGRAM_WEBHOOK_URL=https://yourdomain.com/api/webhook/telegram
+# TELEGRAM_WEBHOOK_SECRET=random_secret_here
+
+# Telegram'a webhook bildir (bir kez):
+curl -X POST "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook" \
+  -d "url=https://yourdomain.com/api/webhook/telegram" \
+  -d "secret_token=random_secret_here"
+
+# Bot servisini dışlayarak başlat (webhook'u api servisi taşır):
+docker compose --profile webhook up -d --build
+```
+
+#### Yedekleme
+
+Günlük yedekler `./backups/` dizininde. Manuel yedekleme:
+
+```bash
+cp ./data/life_is_bot.db ./data/life_is_bot_$(date +%Y-%m-%d).db
+```
+
+#### Güncelleme
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+#### Smoke Test
+
+```bash
+./scripts/smoke_test.sh
+```
+
 ## Geliştirme
 
 ```bash
