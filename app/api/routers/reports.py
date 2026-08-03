@@ -12,6 +12,7 @@ from app.api.schemas.report import (
     ReportDailySchema,
     ReportMonthlySchema,
     ReportWeeklySchema,
+    ReportYearlySchema,
 )
 from app.core.timezone import now_in
 from app.services import report_service, settings_service
@@ -65,3 +66,20 @@ async def monthly_report(
         month = month or current.month
     report = await report_service.generate_monthly_report(session, user_id, year, month)
     return ReportMonthlySchema.from_report(report)
+
+
+@router.get("/yearly", response_model=ReportYearlySchema)
+@limiter.limit(REPORTS_LIMIT)
+async def yearly_report(
+    request: Request,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    user_id: Annotated[int, Depends(get_current_user)],
+    year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+) -> ReportYearlySchema:
+    """Return the yearly completion report for the authenticated user."""
+    if year is None:
+        user = await settings_service.get_settings(session, user_id)
+        year = now_in(user.timezone).year
+    report = await report_service.generate_yearly_report(session, user_id, year)
+    return ReportYearlySchema.from_report(report)
