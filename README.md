@@ -148,6 +148,25 @@ docker compose up -d --build
 ./scripts/smoke_test.sh
 ```
 
+## Telegram Mini App (WebApp)
+
+Bot'un menü butonundan açılan mobil web arayüzü (`app/webapp/index.html`) FastAPI tarafından `/webapp/` yolundan sunulur. Streak ve alışkanlıkların (CRUD) yönetimini sağlar; kimlik doğrulama, mevcut initData imzası (`Authorization: Bearer <initData>`) ile yapılır.
+
+Kullanım önkoşulları:
+
+1. Kullanıcı bota `/start` göndermiş olmalı (aksi hâlde API `401 user not registered` döner).
+2. BotFather'da (`@BotFather`) `/setmenubutton` ile bot seçilip Mini App URL'si (ör. `https://ornek.trycloudflare.com/webapp/`) ve buton metni (ör. "Rutinler") ayarlanır.
+
+Geliştirme:
+
+```bash
+# API'yi tunnel'ın dinlediği bağlantı noktasında başlat
+uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8080
+# tarayıcıda doğrudan kontrol: https://<tunnel>/webapp/
+```
+
+Not: `trycloudflare.com` adresleri geçicidir; tunnel yeniden başlatılırsa BotFather'da menü butonu yeniden ayarlanmalıdır. İstikrarlı kullanım için kalıcı bir tunnel/domain önerilir.
+
 ## Geliştirme
 
 ```bash
