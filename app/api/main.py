@@ -15,6 +15,7 @@ from app.api.routers.reports import router as reports_router
 from app.api.routers.sport import router as sport_router
 from app.api.routers.step import router as step_router
 from app.api.routers.supplement import router as supplement_router
+from app.api.routers.webhook import router as webhook_router
 from app.core.config import settings
 from app.core.logger import get_logger
 
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(sport_router)
     app.include_router(step_router)
     app.include_router(supplement_router)
+    app.include_router(webhook_router)
     return app
 
 
