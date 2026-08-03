@@ -5,6 +5,7 @@ from datetime import date
 from pydantic import BaseModel
 
 from app.services.report_service import MonthlyBreakdown, MonthlyReport, YearlyReport
+from app.services.streak_service import StreakReport
 
 
 class ReportDailySchema(BaseModel):
@@ -29,6 +30,22 @@ class ReportWeeklySchema(BaseModel):
     compliance_rate: int
     best_day: int | None
     weakest_day: int | None
+
+
+class ReportStreakSchema(BaseModel):
+    user_id: int
+    current: int
+    longest: int
+    today_completed: bool
+
+    @classmethod
+    def from_report(cls, report: StreakReport) -> "ReportStreakSchema":
+        return cls(
+            user_id=report.user_id,
+            current=report.current,
+            longest=report.longest,
+            today_completed=report.today_completed,
+        )
 
 
 class ReportBotStatsSchema(BaseModel):

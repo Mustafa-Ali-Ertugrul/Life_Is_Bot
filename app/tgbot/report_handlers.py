@@ -4,8 +4,9 @@ from telegram.ext import ContextTypes
 from app.core.database import unit_of_work
 from app.core.timezone import now_in
 from app.models import BotKey
-from app.services import report_service, settings_service
+from app.services import report_service, settings_service, streak_service
 from app.services.report_service import DailyReport, MonthlyReport, WeeklyReport, YearlyReport
+from app.services.streak_service import StreakReport
 from app.tgbot.callback_parser import ReportAction, UICallback
 from app.tgbot.keyboards import monthly_report_nav, report_menu
 from app.tgbot.messages import (
@@ -30,6 +31,10 @@ from app.tgbot.messages import (
     REPORT_SUMMARY_LINES,
     REPORT_WEAKEST_DAY,
     REPORT_WEEKLY_TITLE,
+    STREAK_EMPTY,
+    STREAK_MESSAGE,
+    STREAK_TODAY_DONE,
+    STREAK_TODAY_PENDING,
     WEEKDAY_NAMES_TR,
     YEARLY_REPORT_BEST_MONTH,
     YEARLY_REPORT_EMPTY,
@@ -94,6 +99,25 @@ async def cmd_yearly_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         year, _ = await _current_year_month(user_id)
     text, keyboard = await _yearly_payload(user_id, year)
     await update.effective_message.reply_text(text, reply_markup=keyboard)
+
+
+async def cmd_streak(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.effective_message is not None
+    user_id = await _ensure_user_id(context, update)
+    async with unit_of_work() as session:
+        report = await streak_service.generate_streak_report(session, user_id)
+    await update.effective_message.reply_text(_format_streak(report))
+
+
+def _format_streak(report: StreakReport) -> str:
+    if report.longest == 0:
+        return STREAK_EMPTY
+    today_line = STREAK_TODAY_DONE if report.today_completed else STREAK_TODAY_PENDING
+    return STREAK_MESSAGE.format(
+        current=report.current,
+        longest=report.longest,
+        today_line=today_line,
+    )
 
 
 async def show_report(
@@ -317,6 +341,7 @@ def _weekday_name(weekday: int | None) -> str:
 __all__ = [
     "cmd_monthly_report",
     "cmd_rapor",
+    "cmd_streak",
     "cmd_yearly_report",
     "show_report",
 ]
