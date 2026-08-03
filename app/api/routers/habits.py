@@ -5,8 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, pagination_params
 from app.api.schemas.habit import HabitCreate, HabitResponse, HabitUpdate
+from app.api.schemas.pagination import PaginatedResponse, paginate
 from app.core.errors import NotFoundError
 from app.models import Habit
 from app.services import habit_service
@@ -21,12 +22,15 @@ async def _get_owned_habit(session: AsyncSession, habit_id: int, user_id: int) -
     return habit
 
 
-@router.get("", response_model=list[HabitResponse])
+@router.get("", response_model=PaginatedResponse[HabitResponse])
 async def list_habits(
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
-) -> list[Habit]:
-    return await habit_service.list_habits(session, user_id)
+    pagination: Annotated[tuple[int, int], Depends(pagination_params)],
+) -> PaginatedResponse[HabitResponse]:
+    habits = await habit_service.list_habits(session, user_id)
+    limit, offset = pagination
+    return paginate([HabitResponse.model_validate(habit) for habit in habits], limit, offset)
 
 
 @router.post("", response_model=HabitResponse, status_code=201)

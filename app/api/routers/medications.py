@@ -5,8 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, pagination_params
 from app.api.schemas.medication import MedicationCreate, MedicationResponse, MedicationUpdate
+from app.api.schemas.pagination import PaginatedResponse, paginate
 from app.core.errors import NotFoundError
 from app.models import MedicationPlan
 from app.services import medication_service
@@ -21,12 +22,15 @@ async def _get_owned_plan(session: AsyncSession, plan_id: int, user_id: int) -> 
     return plan
 
 
-@router.get("", response_model=list[MedicationResponse])
+@router.get("", response_model=PaginatedResponse[MedicationResponse])
 async def list_medications(
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
-) -> list[MedicationPlan]:
-    return await medication_service.list_medication_plans(session, user_id)
+    pagination: Annotated[tuple[int, int], Depends(pagination_params)],
+) -> PaginatedResponse[MedicationResponse]:
+    plans = await medication_service.list_medication_plans(session, user_id)
+    limit, offset = pagination
+    return paginate([MedicationResponse.model_validate(plan) for plan in plans], limit, offset)
 
 
 @router.post("", response_model=MedicationResponse, status_code=201)
