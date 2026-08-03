@@ -124,6 +124,10 @@ Günlük yedekler `./backups/` dizininde. Manuel yedekleme:
 cp ./data/life_is_bot.db ./data/life_is_bot_$(date +%Y-%m-%d).db
 ```
 
+#### Veri Temizleme
+
+`PURGE_ENABLED=True` ile ayın son günü aylık rapordan sonra (23:55) eski veriler silinir ve `VACUUM` çalışır. `DATA_RETENTION_MONTHS` (varsayılan 1) geçerli ay dahil tutulacak geçmiş ay sayısıdır; silinenler: eski `reminder_events`, `user_responses`, `notification_logs`, `step_logs`, `audit_logs`. Aktif planlar, kullanıcılar ve onboarding yanıtları korunur.
+
 #### Güncelleme
 
 ```bash
