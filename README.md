@@ -128,6 +128,10 @@ cp ./data/life_is_bot.db ./data/life_is_bot_$(date +%Y-%m-%d).db
 
 `PURGE_ENABLED=True` ile ayın son günü aylık rapordan sonra (23:55) eski veriler silinir ve `VACUUM` çalışır. `DATA_RETENTION_MONTHS` (varsayılan 1) geçerli ay dahil tutulacak geçmiş ay sayısıdır; silinenler: eski `reminder_events`, `user_responses`, `notification_logs`, `step_logs`, `audit_logs`. Aktif planlar, kullanıcılar ve onboarding yanıtları korunur.
 
+#### Rate Limiting
+
+API endpoint'leri kullanıcı başına dakikalık istek limitine tabidir: CRUD endpoint'leri `RATE_LIMIT_CRUD_PER_MINUTE` (varsayılan 60), rapor endpoint'leri `RATE_LIMIT_REPORTS_PER_MINUTE` (varsayılan 30). `/health` ve Telegram webhook'u limitsizdir. Limit aşılınca `429` döner; yanıtlarda `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` header'ları bulunur. `RATE_LIMIT_ENABLED=False` ile tüm limitler kapatılabilir (tek process'li deployment için `memory://` storage yeterlidir).
+
 #### Güncelleme
 
 ```bash

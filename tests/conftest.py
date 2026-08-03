@@ -58,6 +58,14 @@ def _default_modules() -> None:
     setup_default_modules()
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter() -> None:
+    """Isolate the in-memory rate limiter counters between tests."""
+    from app.api.rate_limit import limiter
+
+    limiter.reset()
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(
@@ -104,6 +112,24 @@ async def api_user(db_session: AsyncSession) -> User:
 async def auth_headers(monkeypatch: pytest.MonkeyPatch, api_user: User) -> dict[str, str]:
     monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
     return {"Authorization": f"Bearer {make_init_data(TEST_TELEGRAM_USER_ID)}"}
+
+
+@pytest_asyncio.fixture
+async def api_user_2(db_session: AsyncSession) -> User:
+    user = User(name="api-test-2", consent_given=True, is_active=True)
+    db_session.add(user)
+    await db_session.flush()
+    db_session.add(TelegramAccount(user_id=user.id, telegram_user_id=str(TELEGRAM_USER_ID_2)))
+    await db_session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
+async def auth_headers_user2(
+    monkeypatch: pytest.MonkeyPatch, api_user_2: User
+) -> dict[str, str]:
+    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
+    return {"Authorization": f"Bearer {make_init_data(int(TELEGRAM_USER_ID_2))}"}
 
 
 @pytest_asyncio.fixture
