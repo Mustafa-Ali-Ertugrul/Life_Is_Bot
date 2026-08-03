@@ -56,6 +56,7 @@ HELP = (
     "/rapor - Raporları göster\n"
     "/aylik_rapor - Aylık rapor göster\n"
     "/yillik_rapor - Yıllık rapor göster\n"
+    "/streak - Seri (ardışık gün) göster\n"
     "/yardim - Bu yardım menüsü"
 )
 
@@ -156,6 +157,11 @@ YEARLY_REPORT_MONTH_EMPTY = "{month}: Veri yok"
 YEARLY_REPORT_BEST_MONTH = "🏆 En iyi ay: {month} (%{rate})"
 YEARLY_REPORT_WORST_MONTH = "📉 En zayıf ay: {month} (%{rate})"
 YEARLY_REPORT_INVALID_ARG = "❌ Geçersiz yıl. Kullanım: /yillik_rapor veya /yillik_rapor 2026"
+
+STREAK_EMPTY = "Henüz tamamlanmış hatırlatma yok. İlk serini bugün başlat! 🔥"
+STREAK_MESSAGE = "🔥 Seri: {current} gün\n🏆 En uzun seri: {longest} gün\n{today_line}"
+STREAK_TODAY_DONE = "Bugün tamamlandı ✅"
+STREAK_TODAY_PENDING = "Bugün henüz tamamlanmadı — seriyi korumak için bugünü tamamla!"
 
 MONTHS_TR = [
     "Ocak",
@@ -456,5 +462,6 @@ COMMANDS = [
     ("rapor", "Raporları göster"),
     ("aylik_rapor", "Aylık rapor göster"),
     ("yillik_rapor", "Yıllık rapor göster"),
+    ("streak", "Seri (ardışık gün) göster"),
     ("yardim", "Yardım menüsü"),
 ]
