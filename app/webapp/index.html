@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="var(--tg-theme-bg-color, #f7f8fa)">
+<title>Rutinbot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --tg-bg: var(--tg-theme-bg-color, #f7f8fa);
+    --tg-bg-secondary: var(--tg-theme-secondary-bg-color, #eef1f4);
+    --tg-text: var(--tg-theme-text-color, #1b1b1f);
+    --tg-hint: var(--tg-theme-hint-color, #8b8e98);
+    --tg-accent: var(--tg-theme-button-color, #3b82f6);
+    --tg-accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --tg-destructive: var(--tg-theme-destructive-text-color, #ef4444);
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    min-height: 100vh;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header { text-align: center; padding: 8px 0; }
+  header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  header p { color: var(--tg-hint); font-size: 14px; margin-top: 4px; }
+
+  .card {
+    background: var(--tg-bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hidden { display: none !important; }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-head h2 { font-size: 16px; font-weight: 700; }
+
+  .icon-btn {
+    border: none;
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn:active { opacity: 0.7; }
+
+  .streak-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .streak-item {
+    background: var(--tg-bg);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .streak-item .value { font-size: 28px; font-weight: 800; }
+  .streak-item .label { font-size: 12px; color: var(--tg-hint); margin-top: 2px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .badge.ok { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+  .badge.wait { background: var(--tg-bg); color: var(--tg-hint); }
+
+  .habit {
+    background: var(--tg-bg);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .habit .info { flex: 1; min-width: 0; }
+  .habit .name { font-size: 15px; font-weight: 600; }
+  .habit .meta { font-size: 12px; color: var(--tg-hint); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .habit.off .name { color: var(--tg-hint); text-decoration: line-through; }
+
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: var(--tg-hint);
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.15s;
+  }
+  .switch.on { background: var(--tg-accent); }
+  .switch.on::after { transform: translateX(18px); }
+
+  .del-btn {
+    border: none;
+    background: transparent;
+    color: var(--tg-destructive);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px;
+    flex-shrink: 0;
+  }
+  .del-btn:active { opacity: 0.7; }
+
+  .empty { color: var(--tg-hint); font-size: 14px; text-align: center; padding: 12px 0; }
+
+  form { display: flex; flex-direction: column; gap: 10px; }
+
+  label { font-size: 12px; font-weight: 600; color: var(--tg-hint); }
+
+  input[type="text"],
+  input[type="time"] {
+    width: 100%;
+    background: var(--tg-bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--tg-text);
+    font-size: 15px;
+  }
+  input[type="text"]:focus,
+  input[type="time"]:focus { outline: 2px solid var(--tg-accent); }
+
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    border: none;
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    border-radius: 10px;
+    padding: 8px 0;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .day.selected { background: var(--tg-accent); color: var(--tg-accent-text); }
+
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--tg-accent); color: var(--tg-accent-text); }
+  .btn.secondary { background: var(--tg-bg); color: var(--tg-text); }
+  .btn:active { opacity: 0.8; }
+
+  .notice {
+    background: var(--tg-bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--tg-text);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--tg-hint);
+    font-size: 12px;
+    padding: 8px 0 16px;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Rutinbot</h1>
+    <p id="subtitle">Alışkanlıklarını gör, serini koru</p>
+  </header>
+
+  <section id="outside-notice" class="notice hidden">
+    <div>Bu sayfa Telegram Mini App olarak kullanılmak üzere tasarlandı.</div>
+    <div>Lütfen <a href="https://t.me/Lifee_Is_Bot" target="_blank" rel="noopener">@Lifee_Is_Bot</a> üzerinden açın.</div>
+  </section>
+
+  <section id="register-notice" class="notice hidden">
+    <div>Bu bot seni henüz tanımıyor.</div>
+    <div>Önce <strong>@Lifee_Is_Bot</strong>'a <strong>/start</strong> gönder, sonra bu uygulamayı tekrar aç.</div>
+    <div><button id="reload-btn" class="btn primary" type="button">Tekrar dene</button></div>
+  </section>
+
+  <section id="streak-card" class="card hidden">
+    <div class="section-head">
+      <h2>Seri</h2>
+      <span id="streak-badge" class="badge wait">…</span>
+    </div>
+    <div class="streak-grid">
+      <div class="streak-item">
+        <div id="streak-current" class="value">0</div>
+        <div class="label">Günlük seri</div>
+      </div>
+      <div class="streak-item">
+        <div id="streak-longest" class="value">0</div>
+        <div class="label">En uzun seri</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="habits-section" class="card hidden">
+    <div class="section-head">
+      <h2>Alışkanlıklar</h2>
+      <button id="refresh-btn" class="icon-btn" type="button" title="Yenile">↻</button>
+    </div>
+    <div id="habits-list"></div>
+    <div id="empty-state" class="empty hidden">Henüz alışkanlık yok. Aşağıdan ilkini ekle.</div>
+  </section>
+
+  <section id="add-section" class="card hidden">
+    <button id="add-btn" class="btn primary" type="button">+ Alışkanlık ekle</button>
+    <form id="habit-form" class="hidden">
+      <label for="habit-name">Alışkanlık adı</label>
+      <input id="habit-name" type="text" maxlength="255" placeholder="örn. 30 dk yürüyüş" required>
+      <label for="habit-time">Hedef saat</label>
+      <input id="habit-time" type="time" required>
+      <label>Tekrar günleri</label>
+      <div id="day-picker" class="days"></div>
+      <button class="btn primary" type="submit">Kaydet</button>
+      <button id="cancel-btn" class="btn secondary" type="button">Vazgeç</button>
+    </form>
+  </section>
+
+  <footer>Küçük adımlar, büyük sonuçlar.</footer>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  var API = window.location.origin;
+  var habits = [];
+  var isTelegram = !!(window.Telegram && window.Telegram.WebApp && Telegram.WebApp.initData);
+
+  var $ = function (id) { return document.getElementById(id); };
+  var show = function (el) { el.classList.remove("hidden"); };
+  var hide = function (el) { el.classList.add("hidden"); };
+
+  var toastTimer = null;
+  function toast(message) {
+    var el = $("toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2200);
+  }
+
+  function authHeaders() {
+    if (!isTelegram) return {};
+    return { Authorization: "Bearer " + Telegram.WebApp.initData };
+  }
+
+  function api(path, options) {
+    var opts = options || {};
+    opts.headers = Object.assign(
+      { "Content-Type": "application/json" },
+      authHeaders(),
+      opts.headers || {}
+    );
+    return fetch(API + path, opts);
+  }
+
+  function fmtTime(hour, minute) {
+    return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+  }
+
+  function fmtDays(days) {
+    var sorted = days.split(",").map(Number).sort(function (a, b) { return a - b; });
+    return sorted.map(function (d) { return DAYS[d - 1]; }).join(", ");
+  }
+
+  async function loadData() {
+    try {
+      var [streakRes, habitsRes] = await Promise.all([
+        api("/api/reports/streak"),
+        api("/api/habits")
+      ]);
+
+      if (streakRes.status === 401 || habitsRes.status === 401) {
+        showStartNotice();
+        return;
+      }
+      if (!streakRes.ok || !habitsRes.ok) {
+        toast("Yükleme başarısız (" + (streakRes.status || habitsRes.status) + ")");
+        return;
+      }
+
+      var streak = await streakRes.json();
+      var page = await habitsRes.json();
+      habits = page.items || [];
+
+      hide($("register-notice"));
+      renderStreak(streak);
+      renderHabits();
+    } catch (err) {
+      toast("Bağlantı hatası");
+    }
+  }
+
+  function showStartNotice() {
+    show($("register-notice"));
+    hide($("streak-card"));
+    hide($("habits-section"));
+  }
+
+  function renderStreak(streak) {
+    $("streak-current").textContent = streak.current;
+    $("streak-longest").textContent = streak.longest;
+    var badge = $("streak-badge");
+    if (streak.today_completed) {
+      badge.textContent = "Bugün tamamlandı ✓";
+      badge.className = "badge ok";
+    } else {
+      badge.textContent = "Bugün bekliyor";
+      badge.className = "badge wait";
+    }
+    show($("streak-card"));
+  }
+
+  function renderHabits() {
+    var list = $("habits-list");
+    list.textContent = "";
+
+    if (!habits.length) {
+      show($("empty-state"));
+      return;
+    }
+    hide($("empty-state"));
+
+    habits.forEach(function (habit) {
+      var row = document.createElement("div");
+      row.className = "habit" + (habit.is_active ? "" : " off");
+
+      var info = document.createElement("div");
+      info.className = "info";
+      var name = document.createElement("div");
+      name.className = "name";
+      name.textContent = habit.name;
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = fmtTime(habit.target_hour, habit.target_minute) + " · " + fmtDays(habit.days_of_week);
+      info.appendChild(name);
+      info.appendChild(meta);
+
+      var toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "switch" + (habit.is_active ? " on" : "");
+      toggle.title = habit.is_active ? "Pasife al" : "Aktifleştir";
+      toggle.addEventListener("click", function () {
+        setActive(habit, !habit.is_active);
+      });
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "del-btn";
+      del.textContent = "🗑";
+      del.title = "Sil";
+      del.addEventListener("click", function () {
+        if (window.confirm("\"" + habit.name + "\" silinsin mi?")) removeHabit(habit);
+      });
+
+      row.appendChild(info);
+      row.appendChild(toggle);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  async function setActive(habit, active) {
+    try {
+      var res = await api("/api/habits/" + habit.id, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: active })
+      });
+      if (!res.ok) { toast("Güncellenemedi"); return; }
+      habit.is_active = active;
+      renderHabits();
+    } catch (err) {
+      toast("Bağlantı hatası");
+    }
+  }
+
+  async function removeHabit(habit) {
+    try {
+      var res = await api("/api/habits/" + habit.id, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) { toast("Silinemedi"); return; }
+      habits = habits.filter(function (h) { return h.id !== habit.id; });
+      renderHabits();
+      toast("Silindi");
+    } catch (err) {
+      toast("Bağlantı hatası");
+    }
+  }
+
+  function buildDayPicker() {
+    var picker = $("day-picker");
+    DAYS.forEach(function (label, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "day selected";
+      btn.textContent = label;
+      btn.dataset.day = String(i + 1);
+      btn.addEventListener("click", function () {
+        var on = btn.classList.toggle("selected");
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      picker.appendChild(btn);
+    });
+  }
+
+  function selectedDays() {
+    var btns = $("day-picker").querySelectorAll(".day.selected");
+    return Array.prototype.map.call(btns, function (b) { return b.dataset.day; }).join(",");
+  }
+
+  async function createHabit(name, time, days) {
+    var parts = time.split(":");
+    try {
+      var res = await api("/api/habits", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name,
+          target_hour: Number(parts[0]),
+          target_minute: Number(parts[1]),
+          days_of_week: days
+        })
+      });
+      if (!res.ok) {
+        toast("Eklenemedi");
+        return false;
+      }
+      await loadData();
+      toast("Eklendi");
+      return true;
+    } catch (err) {
+      toast("Bağlantı hatası");
+      return false;
+    }
+  }
+
+  function closeForm() {
+    hide($("habit-form"));
+    show($("add-btn"));
+  }
+
+  function openForm() {
+    hide($("add-btn"));
+    show($("habit-form"));
+    $("habit-name").focus();
+  }
+
+  $("refresh-btn").addEventListener("click", loadData);
+  $("reload-btn").addEventListener("click", loadData);
+  $("add-btn").addEventListener("click", openForm);
+  $("cancel-btn").addEventListener("click", closeForm);
+
+  $("habit-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("habit-name").value.trim();
+    var time = $("habit-time").value;
+    var days = selectedDays();
+    if (!name || !time || !days) {
+      toast("Tüm alanları doldur");
+      return;
+    }
+    createHabit(name, time, days).then(function (ok) {
+      if (ok) closeForm();
+    });
+  });
+
+  if (!isTelegram) {
+    show($("outside-notice"));
+    return;
+  }
+
+  if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+    $("subtitle").textContent = "Hoş geldin, " + Telegram.WebApp.initDataUnsafe.user.first_name + " 👋";
+  }
+
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+  if (Telegram.WebApp.disableVerticalSwipes) Telegram.WebApp.disableVerticalSwipes();
+
+  buildDayPicker();
+  show($("streak-card"));
+  show($("habits-section"));
+  show($("add-section"));
+  loadData();
+})();
+</script>
+</body>
+</html>
