@@ -3,10 +3,11 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.api.rate_limit import REPORTS_LIMIT, limiter
 from app.api.schemas.report import (
     ReportDailySchema,
     ReportMonthlySchema,
@@ -19,7 +20,10 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
 @router.get("/daily", response_model=ReportDailySchema)
+@limiter.limit(REPORTS_LIMIT)
 async def daily_report(
+    request: Request,
+    response: Response,
     session: Annotated[AsyncSession, Depends(get_db)],
     user_id: Annotated[int, Depends(get_current_user)],
     day: Annotated[date | None, Query(alias="date")] = None,
@@ -30,7 +34,10 @@ async def daily_report(
 
 
 @router.get("/weekly", response_model=ReportWeeklySchema)
+@limiter.limit(REPORTS_LIMIT)
 async def weekly_report(
+    request: Request,
+    response: Response,
     session: Annotated[AsyncSession, Depends(get_db)],
     user_id: Annotated[int, Depends(get_current_user)],
     week_start: Annotated[date | None, Query()] = None,
@@ -41,7 +48,10 @@ async def weekly_report(
 
 
 @router.get("/monthly", response_model=ReportMonthlySchema)
+@limiter.limit(REPORTS_LIMIT)
 async def monthly_report(
+    request: Request,
+    response: Response,
     session: Annotated[AsyncSession, Depends(get_db)],
     user_id: Annotated[int, Depends(get_current_user)],
     year: Annotated[int | None, Query(ge=1)] = None,
