@@ -88,6 +88,68 @@ class MonthlyReport:
         return round(self.total_completed * 100 / self.total, 1)
 
 
+@dataclass(frozen=True)
+class MonthlyBreakdown:
+    """Single month's statistics within a yearly report."""
+
+    month: int
+    total: int
+    completed: int
+    missed: int
+    snoozed: int
+    pending: int
+    completion_rate: float
+
+
+@dataclass(frozen=True)
+class YearlyReport:
+    """Yearly completion report for a user aggregated from monthly reports."""
+
+    user_id: int
+    year: int
+    monthly: list[MonthlyBreakdown] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return sum(m.total for m in self.monthly)
+
+    @property
+    def total_completed(self) -> int:
+        return sum(m.completed for m in self.monthly)
+
+    @property
+    def total_missed(self) -> int:
+        return sum(m.missed for m in self.monthly)
+
+    @property
+    def total_snoozed(self) -> int:
+        return sum(m.snoozed for m in self.monthly)
+
+    @property
+    def total_pending(self) -> int:
+        return sum(m.pending for m in self.monthly)
+
+    @property
+    def completion_rate(self) -> float:
+        if self.total == 0:
+            return 0.0
+        return round(self.total_completed * 100 / self.total, 1)
+
+    @property
+    def best_month(self) -> MonthlyBreakdown | None:
+        active = [m for m in self.monthly if m.total > 0]
+        if not active:
+            return None
+        return max(active, key=lambda m: m.completion_rate)
+
+    @property
+    def worst_month(self) -> MonthlyBreakdown | None:
+        active = [m for m in self.monthly if m.total > 0]
+        if not active:
+            return None
+        return min(active, key=lambda m: m.completion_rate)
+
+
 async def generate_daily_report(
     session: AsyncSession,
     user_id: int,
@@ -216,6 +278,29 @@ async def generate_monthly_report(
     return MonthlyReport(user_id=user_id, year=year, month=month, bot_stats=bot_stats)
 
 
+async def generate_yearly_report(
+    session: AsyncSession,
+    user_id: int,
+    year: int,
+) -> YearlyReport:
+    """Generate a yearly completion report aggregated from 12 monthly reports."""
+    monthly_breakdown: list[MonthlyBreakdown] = []
+    for month in range(1, 13):
+        monthly = await generate_monthly_report(session, user_id, year, month)
+        monthly_breakdown.append(
+            MonthlyBreakdown(
+                month=month,
+                total=monthly.total,
+                completed=monthly.total_completed,
+                missed=monthly.total_missed,
+                snoozed=monthly.total_snoozed,
+                pending=monthly.total_pending,
+                completion_rate=monthly.completion_rate,
+            )
+        )
+    return YearlyReport(user_id=user_id, year=year, monthly=monthly_breakdown)
+
+
 async def _user_timezone_name(session: AsyncSession, user_id: int) -> str:
     result = await session.execute(select(User.timezone).where(User.id == user_id))
     name = result.scalar_one_or_none()
@@ -283,9 +368,12 @@ def _weakest_day(per_day: dict[int, list[int]]) -> int | None:
 __all__ = [
     "BotMonthlyStats",
     "DailyReport",
+    "MonthlyBreakdown",
     "MonthlyReport",
     "WeeklyReport",
+    "YearlyReport",
     "generate_daily_report",
     "generate_monthly_report",
     "generate_weekly_report",
+    "generate_yearly_report",
 ]
