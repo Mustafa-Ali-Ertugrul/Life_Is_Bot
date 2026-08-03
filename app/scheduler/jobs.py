@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import timedelta
 from itertools import batched
 
@@ -249,6 +250,7 @@ async def monthly_purge_job() -> None:
 
     logger.info(
         "monthly purge completed",
+        **asdict(stats),
         size_before=size_before,
         size_after=size_after,
     )

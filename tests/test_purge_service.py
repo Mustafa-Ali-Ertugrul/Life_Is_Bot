@@ -99,12 +99,8 @@ async def test_purge_deletes_old_events_and_dependents(
     assert stats.reminder_events == 1
     assert stats.user_responses == 1
     assert stats.notification_logs == 1
-    assert await db_session.scalar(
-        select(func.count()).select_from(ReminderEvent)
-    ) == 0
-    assert await db_session.scalar(
-        select(func.count()).select_from(UserResponse)
-    ) == 0
+    assert await db_session.scalar(select(func.count()).select_from(ReminderEvent)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(UserResponse)) == 0
 
 
 async def test_purge_keeps_recent_and_future_events(
