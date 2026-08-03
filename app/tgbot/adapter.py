@@ -79,3 +79,22 @@ def build_application() -> ApplicationT:
     application.add_error_handler(handle_error)
 
     return application
+
+
+async def start_application(
+    application: ApplicationT, *, webhook_url: str, webhook_secret: str
+) -> None:
+    """Initialize and start the application, registering the webhook with Telegram."""
+    await application.initialize()
+    await application.start()
+    await application.bot.set_webhook(
+        url=webhook_url,
+        secret_token=webhook_secret,
+        allowed_updates=["message", "callback_query"],
+    )
+
+
+async def stop_application(application: ApplicationT) -> None:
+    """Stop and shut down the application."""
+    await application.stop()
+    await application.shutdown()
