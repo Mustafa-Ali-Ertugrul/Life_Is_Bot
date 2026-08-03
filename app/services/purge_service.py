@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime, time
 from pathlib import Path
 
-from sqlalchemy import delete, select
+from sqlalchemy import Delete, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -16,7 +16,7 @@ from app.models import AuditLog, NotificationLog, ReminderEvent, StepLog, UserRe
 logger = get_logger("purge")
 
 
-@dataclass(frozen=True)
+@dataclass
 class PurgeStats:
     user_responses: int = 0
     notification_logs: int = 0
@@ -39,7 +39,7 @@ def _db_path() -> Path:
     return Path(settings.database_url.split("///")[-1])
 
 
-def _db_size() -> int | None:
+def db_size() -> int | None:
     path = _db_path()
     try:
         return path.stat().st_size
@@ -97,9 +97,9 @@ async def purge_old_data(session: AsyncSession, today: date) -> PurgeStats:
     return stats
 
 
-async def _delete(session: AsyncSession, statement: object) -> int:
-    result = await session.execute(statement)  # type: ignore[arg-type]
-    return int(result.rowcount or 0)
+async def _delete(session: AsyncSession, statement: Delete) -> int:
+    result = await session.execute(statement)
+    return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
 
 def _vacuum(path: Path) -> int:
@@ -129,6 +129,7 @@ async def vacuum_database() -> int | None:
 __all__ = [
     "PurgeStats",
     "cutoff_date_for",
+    "db_size",
     "purge_old_data",
     "vacuum_database",
 ]
