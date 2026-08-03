@@ -3,7 +3,7 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 def get_settings() -> Settings:
     """Return application settings."""
     return settings
+
+
+async def pagination_params(
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> tuple[int, int]:
+    """Resolve shared pagination query parameters."""
+    return limit, offset
 
 
 async def get_current_user(
