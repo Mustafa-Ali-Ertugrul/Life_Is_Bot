@@ -11,11 +11,12 @@ from app.api.rate_limit import REPORTS_LIMIT, limiter
 from app.api.schemas.report import (
     ReportDailySchema,
     ReportMonthlySchema,
+    ReportStreakSchema,
     ReportWeeklySchema,
     ReportYearlySchema,
 )
 from app.core.timezone import now_in
-from app.services import report_service, settings_service
+from app.services import report_service, settings_service, streak_service
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -83,3 +84,16 @@ async def yearly_report(
         year = now_in(user.timezone).year
     report = await report_service.generate_yearly_report(session, user_id, year)
     return ReportYearlySchema.from_report(report)
+
+
+@router.get("/streak", response_model=ReportStreakSchema)
+@limiter.limit(REPORTS_LIMIT)
+async def streak_report(
+    request: Request,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    user_id: Annotated[int, Depends(get_current_user)],
+) -> ReportStreakSchema:
+    """Return the current and longest completion streak for the authenticated user."""
+    report = await streak_service.generate_streak_report(session, user_id)
+    return ReportStreakSchema.from_report(report)
