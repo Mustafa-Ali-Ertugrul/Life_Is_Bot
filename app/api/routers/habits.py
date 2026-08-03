@@ -2,10 +2,11 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, pagination_params
+from app.api.rate_limit import CRUD_LIMIT, limiter
 from app.api.schemas.habit import HabitCreate, HabitResponse, HabitUpdate
 from app.api.schemas.pagination import PaginatedResponse, paginate
 from app.core.errors import NotFoundError
@@ -23,7 +24,10 @@ async def _get_owned_habit(session: AsyncSession, habit_id: int, user_id: int) -
 
 
 @router.get("", response_model=PaginatedResponse[HabitResponse])
+@limiter.limit(CRUD_LIMIT)
 async def list_habits(
+    request: Request,
+    response: Response,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
     pagination: Annotated[tuple[int, int], Depends(pagination_params)],
@@ -34,7 +38,10 @@ async def list_habits(
 
 
 @router.post("", response_model=HabitResponse, status_code=201)
+@limiter.limit(CRUD_LIMIT)
 async def create_habit(
+    request: Request,
+    response: Response,
     body: HabitCreate,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -50,7 +57,10 @@ async def create_habit(
 
 
 @router.get("/{habit_id}", response_model=HabitResponse)
+@limiter.limit(CRUD_LIMIT)
 async def get_habit(
+    request: Request,
+    response: Response,
     habit_id: int,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -59,7 +69,10 @@ async def get_habit(
 
 
 @router.patch("/{habit_id}", response_model=HabitResponse)
+@limiter.limit(CRUD_LIMIT)
 async def update_habit(
+    request: Request,
+    response: Response,
     habit_id: int,
     body: HabitUpdate,
     user_id: Annotated[int, Depends(get_current_user)],
@@ -72,7 +85,10 @@ async def update_habit(
 
 
 @router.delete("/{habit_id}", status_code=204)
+@limiter.limit(CRUD_LIMIT)
 async def delete_habit(
+    request: Request,
+    response: Response,
     habit_id: int,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],

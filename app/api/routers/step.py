@@ -3,10 +3,11 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.api.rate_limit import CRUD_LIMIT, limiter
 from app.api.schemas.step import (
     StepLogCreate,
     StepLogResponse,
@@ -21,7 +22,10 @@ router = APIRouter(prefix="/api/step", tags=["step"])
 
 
 @router.get("/settings", response_model=StepSettingsResponse)
+@limiter.limit(CRUD_LIMIT)
 async def get_step_settings(
+    request: Request,
+    response: Response,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> StepSettings:
@@ -29,7 +33,10 @@ async def get_step_settings(
 
 
 @router.patch("/settings", response_model=StepSettingsResponse)
+@limiter.limit(CRUD_LIMIT)
 async def update_step_settings(
+    request: Request,
+    response: Response,
     body: StepSettingsUpdate,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -40,7 +47,10 @@ async def update_step_settings(
 
 
 @router.get("/logs", response_model=list[StepLogResponse])
+@limiter.limit(CRUD_LIMIT)
 async def list_step_logs(
+    request: Request,
+    response: Response,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
     start: Annotated[date, Query()],
@@ -52,7 +62,10 @@ async def list_step_logs(
 
 
 @router.post("/logs", response_model=StepLogResponse, status_code=201)
+@limiter.limit(CRUD_LIMIT)
 async def create_step_log(
+    request: Request,
+    response: Response,
     body: StepLogCreate,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -61,7 +74,10 @@ async def create_step_log(
 
 
 @router.get("/logs/{log_date}", response_model=StepLogResponse)
+@limiter.limit(CRUD_LIMIT)
 async def get_step_log(
+    request: Request,
+    response: Response,
     log_date: date,
     user_id: Annotated[int, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)],

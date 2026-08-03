@@ -3,7 +3,7 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, Query
+from fastapi import Depends, Header, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +33,7 @@ async def pagination_params(
 
 
 async def get_current_user(
+    request: Request,
     session: Annotated[AsyncSession, Depends(get_db)],
     authorization: Annotated[str | None, Header()] = None,
     x_api_key: Annotated[str | None, Header()] = None,
@@ -54,6 +55,7 @@ async def get_current_user(
         user_id = result.scalar_one_or_none()
         if user_id is None:
             raise HTTPException(status_code=401, detail="user not registered")
+        request.state.user_id = user_id
         return user_id
 
     if x_api_key and verify_api_key(x_api_key):
@@ -63,6 +65,7 @@ async def get_current_user(
         user_id = result.scalar_one_or_none()
         if user_id is None:
             raise HTTPException(status_code=401, detail="no users found")
+        request.state.user_id = user_id
         return user_id
 
     raise HTTPException(status_code=401, detail="authentication required")

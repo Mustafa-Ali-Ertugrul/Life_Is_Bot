@@ -1,13 +1,17 @@
 """FastAPI application factory for the Life Is Bot API."""
 
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+from slowapi.errors import RateLimitExceeded
 
 from app.api import API_VERSION
 from app.api.exceptions import register_exception_handlers
+from app.api.rate_limit import limiter
 from app.api.routers.habits import router as habits_router
 from app.api.routers.health import router as health_router
 from app.api.routers.medications import router as medications_router
@@ -49,8 +53,32 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("api stopped")
 
 
+def _retry_after_seconds(request: Request) -> int:
+    """Seconds until the rate-limit window resets, with a safe fallback."""
+    view_rate_limit = getattr(request.state, "view_rate_limit", None)
+    if view_rate_limit is None:
+        return 60
+    limit_item, keys = view_rate_limit
+    reset_time, _remaining = limiter.limiter.get_window_stats(limit_item, *keys)
+    return max(int(1 + reset_time - time.time()), 1)
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Life Is Bot API", version=API_VERSION, lifespan=lifespan)
+
+    app.state.limiter = limiter
+
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
+        view_rate_limit = getattr(request.state, "view_rate_limit", None)
+        retry_after = _retry_after_seconds(request)
+        response = JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded", "retry_after": retry_after},
+        )
+        if view_rate_limit is None:
+            return response
+        return limiter._inject_headers(response, view_rate_limit)
 
     app.add_middleware(
         CORSMiddleware,

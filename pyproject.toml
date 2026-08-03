@@ -14,6 +14,7 @@ dependencies = [
     "structlog>=24.4",
     "fastapi>=0.141.1",
     "uvicorn[standard]>=0.52.1",
+    "slowapi>=0.1.10",
 ]
 
 [dependency-groups]
@@ -32,6 +33,10 @@ plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
 files = ["app", "tests"]
 warn_unused_ignores = true
 check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["slowapi", "slowapi.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
