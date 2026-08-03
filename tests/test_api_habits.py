@@ -11,7 +11,7 @@ HABIT_PAYLOAD = {"name": "Su iç", "target_hour": 9, "target_minute": 30}
 async def test_list_habits_empty(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
     response = await api_client.get("/api/habits", headers=auth_headers)
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json() == {"items": [], "total": 0, "limit": 50, "offset": 0}
 
 
 async def test_create_habit(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:

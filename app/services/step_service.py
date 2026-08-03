@@ -86,6 +86,39 @@ async def update_days_of_week(session: AsyncSession, user_id: int, days: list[in
     return settings
 
 
+async def update_settings(
+    session: AsyncSession,
+    user_id: int,
+    *,
+    daily_target: int | None = None,
+    reminder_hour: int | None = None,
+    reminder_minute: int | None = None,
+    days_of_week: str | None = None,
+    is_active: bool | None = None,
+) -> StepSettings:
+    """Partially update step settings."""
+    settings = await get_or_create_settings(session, user_id)
+    if daily_target is not None:
+        if not 0 <= daily_target <= 100000:
+            raise InvalidStateError("daily_target must be between 0 and 100000")
+        settings.daily_target = daily_target
+    if reminder_hour is not None:
+        if not 0 <= reminder_hour <= 23:
+            raise InvalidStateError("reminder_hour must be between 0 and 23")
+        settings.reminder_hour = reminder_hour
+    if reminder_minute is not None:
+        if not 0 <= reminder_minute <= 59:
+            raise InvalidStateError("reminder_minute must be between 0 and 59")
+        settings.reminder_minute = reminder_minute
+    if days_of_week is not None:
+        settings.days_of_week = days_of_week
+    if is_active is not None:
+        settings.is_active = is_active
+    await session.flush()
+    await session.refresh(settings)
+    return settings
+
+
 async def get_steps_for_date(session: AsyncSession, user_id: int, log_date: date) -> StepLog | None:
     result = await session.execute(
         select(StepLog).where(
@@ -94,6 +127,21 @@ async def get_steps_for_date(session: AsyncSession, user_id: int, log_date: date
         )
     )
     return result.scalar_one_or_none()
+
+
+async def get_logs_range(
+    session: AsyncSession, user_id: int, start: date, end: date
+) -> list[StepLog]:
+    result = await session.execute(
+        select(StepLog)
+        .where(
+            StepLog.user_id == user_id,
+            StepLog.log_date >= start,
+            StepLog.log_date <= end,
+        )
+        .order_by(StepLog.log_date)
+    )
+    return list(result.scalars().all())
 
 
 async def get_today_steps(session: AsyncSession, user_id: int) -> StepLog | None:
@@ -180,6 +228,7 @@ __all__ = [
     "StepSettings",
     "generate_today_events",
     "get_or_create_settings",
+    "get_logs_range",
     "get_settings",
     "get_steps_for_date",
     "get_today_steps",
@@ -188,4 +237,5 @@ __all__ = [
     "update_daily_target",
     "update_days_of_week",
     "update_reminder_time",
+    "update_settings",
 ]
