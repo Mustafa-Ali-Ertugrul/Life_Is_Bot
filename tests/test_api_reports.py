@@ -394,3 +394,62 @@ async def test_yearly_rate_limited(api_client: AsyncClient, auth_headers: dict[s
     response = await api_client.get("/api/reports/yearly", headers=auth_headers)
     assert response.status_code == 200
     assert response.headers["x-ratelimit-limit"] == "30"
+
+
+async def test_streak_requires_auth(api_client: AsyncClient) -> None:
+    response = await api_client.get("/api/reports/streak")
+    assert response.status_code == 401
+
+
+async def test_streak_default_empty(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+) -> None:
+    response = await api_client.get("/api/reports/streak", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["user_id"] == api_user.id
+    assert body["current"] == 0
+    assert body["longest"] == 0
+    assert body["today_completed"] is False
+
+
+async def test_streak_counts_consecutive_days(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+    db_session: AsyncSession,
+) -> None:
+    today = now_in(api_user.timezone).date()
+    await _add_event(
+        db_session, api_user.id, ReminderStatus.POSITIVE.value, today, related_type="a", label="1"
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        today - timedelta(days=1),
+        related_type="b",
+        label="2",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.NEGATIVE.value,
+        today - timedelta(days=2),
+        related_type="c",
+        label="3",
+    )
+    response = await api_client.get("/api/reports/streak", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["current"] == 2
+    assert body["longest"] == 2
+    assert body["today_completed"] is True
+
+
+async def test_streak_rate_limited(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    response = await api_client.get("/api/reports/streak", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.headers["x-ratelimit-limit"] == "30"
