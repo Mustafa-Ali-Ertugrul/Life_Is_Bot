@@ -125,9 +125,7 @@ async def api_user_2(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def auth_headers_user2(
-    monkeypatch: pytest.MonkeyPatch, api_user_2: User
-) -> dict[str, str]:
+async def auth_headers_user2(monkeypatch: pytest.MonkeyPatch, api_user_2: User) -> dict[str, str]:
     monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
     return {"Authorization": f"Bearer {make_init_data(int(TELEGRAM_USER_ID_2))}"}
 
