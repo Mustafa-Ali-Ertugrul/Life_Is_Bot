@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -73,16 +74,20 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest_asyncio.fixture
-async def api_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+async def api_app(db_session: AsyncSession) -> FastAPI:
     app = create_app()
 
     async def _override_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    return app
+
+
+@pytest_asyncio.fixture
+async def api_client(api_app: FastAPI) -> AsyncIterator[AsyncClient]:
+    async with AsyncClient(transport=ASGITransport(app=api_app), base_url="http://test") as client:
         yield client
-    app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
