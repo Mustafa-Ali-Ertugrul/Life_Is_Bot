@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.errors import InvalidStateError
+from app.core.errors import InvalidStateError, NotFoundError
 from app.core.schedule import parse_days
 from app.core.timezone import get_user_timezone, now_in, to_utc_scheduled
 from app.models import BotKey, ReminderEvent, SupplementPlan, User
@@ -79,6 +79,65 @@ async def toggle_supplement_plan(
     return plan
 
 
+async def update_supplement_plan(
+    session: AsyncSession,
+    plan_id: int,
+    *,
+    name: str | None = None,
+    dose: str | None = None,
+    with_food: str | None = None,
+    target_hour: int | None = None,
+    target_minute: int | None = None,
+    days_of_week: str | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    is_active: bool | None = None,
+) -> SupplementPlan:
+    """Partially update a supplement plan."""
+    plan = await get_supplement_plan(session, plan_id)
+    if plan is None:
+        raise NotFoundError(f"SupplementPlan {plan_id} not found")
+
+    if name is not None:
+        if not name.strip():
+            raise InvalidStateError("name must not be empty")
+        plan.name = name.strip()
+    if dose is not None:
+        plan.dose = dose.strip() if dose else None
+    if with_food is not None:
+        normalized = with_food.strip().lower()
+        if normalized not in VALID_WITH_FOOD:
+            raise InvalidStateError(f"with_food must be one of {sorted(VALID_WITH_FOOD)}")
+        plan.with_food = normalized
+    if target_hour is not None:
+        if not 0 <= target_hour <= 23:
+            raise InvalidStateError("target_hour must be between 0 and 23")
+        plan.target_hour = target_hour
+    if target_minute is not None:
+        if not 0 <= target_minute <= 59:
+            raise InvalidStateError("target_minute must be between 0 and 59")
+        plan.target_minute = target_minute
+    if days_of_week is not None:
+        plan.days_of_week = days_of_week
+    if start_date is not None:
+        plan.start_date = start_date
+    if end_date is not None:
+        plan.end_date = end_date
+    if is_active is not None:
+        plan.is_active = is_active
+
+    if (
+        plan.start_date is not None
+        and plan.end_date is not None
+        and plan.start_date > plan.end_date
+    ):
+        raise InvalidStateError("start_date must not be after end_date")
+
+    await session.flush()
+    await session.refresh(plan)
+    return plan
+
+
 async def generate_today_events(
     session: AsyncSession, user_id: int, now: datetime | None = None
 ) -> list[ReminderEvent]:
@@ -143,4 +202,5 @@ __all__ = [
     "get_supplement_plan",
     "list_supplement_plans",
     "toggle_supplement_plan",
+    "update_supplement_plan",
 ]
