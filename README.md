@@ -37,6 +37,8 @@ Telegram tabanlı sağlık ve rutin takip botu. Günlük rutinler, spor, supplem
 | `/rutin_ekle` | Yeni rutin ekle (adım adım) |
 | `/ayarlar` | Ayarlar (Faz 1) |
 | `/rapor` | Raporlar (Faz 1) |
+| `/aylik_rapor` | Aylık rapor |
+| `/yillik_rapor` | Yıllık rapor (aylık breakdown + en iyi/en zayıf ay) |
 | `/yardim` | Yardım |
 
 ## Kurulum

@@ -294,3 +294,103 @@ async def test_reports_scoped_to_user(
     )
     assert response.status_code == 200
     assert response.json()["total"] == 0
+
+
+async def test_yearly_default_empty(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+) -> None:
+    response = await api_client.get(
+        f"/api/reports/yearly?year={now_in(api_user.timezone).year}", headers=auth_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["user_id"] == api_user.id
+    assert body["total"] == 0
+    assert body["total_completed"] == 0
+    assert body["completion_rate"] == 0.0
+    assert body["best_month"] is None
+    assert body["worst_month"] is None
+    assert len(body["monthly"]) == 12
+    assert all(item["total"] == 0 for item in body["monthly"])
+
+
+async def test_yearly_default_current_year(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+) -> None:
+    response = await api_client.get("/api/reports/yearly", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["year"] == now_in(api_user.timezone).year
+
+
+async def test_yearly_invalid_year(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    response = await api_client.get("/api/reports/yearly?year=1999", headers=auth_headers)
+    assert response.status_code == 422
+
+    response = await api_client.get("/api/reports/yearly?year=2101", headers=auth_headers)
+    assert response.status_code == 422
+
+
+async def test_yearly_aggregates_months(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+    db_session: AsyncSession,
+) -> None:
+    current = now_in(api_user.timezone)
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        date(current.year, 1, 10),
+        related_type="a",
+        label="1",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.NEGATIVE.value,
+        date(current.year, 8, 15),
+        related_type="b",
+        label="2",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        date(current.year, 8, 16),
+        related_type="c",
+        label="3",
+    )
+    response = await api_client.get(
+        f"/api/reports/yearly?year={current.year}", headers=auth_headers
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 3
+    assert body["total_completed"] == 2
+    assert body["total_missed"] == 1
+    assert body["completion_rate"] == round(2 * 100 / 3, 1)
+    monthly = {item["month"]: item for item in body["monthly"]}
+    assert monthly[1]["total"] == 1
+    assert monthly[8]["total"] == 2
+    assert monthly[1]["completed"] == 1
+    assert body["best_month"] is not None
+    assert body["best_month"]["month"] == 1
+    assert body["worst_month"] is not None
+    assert body["worst_month"]["month"] == 8
+
+
+async def test_yearly_requires_auth(api_client: AsyncClient) -> None:
+    response = await api_client.get("/api/reports/yearly")
+    assert response.status_code == 401
+
+
+async def test_yearly_rate_limited(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    response = await api_client.get("/api/reports/yearly", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.headers["x-ratelimit-limit"] == "30"
