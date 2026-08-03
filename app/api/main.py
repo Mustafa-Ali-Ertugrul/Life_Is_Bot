@@ -76,6 +76,8 @@ def create_app() -> FastAPI:
             status_code=429,
             content={"detail": "Rate limit exceeded", "retry_after": retry_after},
         )
+        if view_rate_limit is None:
+            return response
         return limiter._inject_headers(response, view_rate_limit)
 
     app.add_middleware(
