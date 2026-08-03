@@ -86,8 +86,9 @@ curl -X POST "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook" \
   -d "url=https://yourdomain.com/api/webhook/telegram" \
   -d "secret_token=random_secret_here"
 
-# Bot servisini dışlayarak başlat (webhook'u api servisi taşır):
-docker compose --profile webhook up -d --build
+# Polling bot servisini durdur (webhook'u api servisi taşır):
+docker compose stop bot
+docker compose up -d --build
 ```
 
 #### Yedekleme

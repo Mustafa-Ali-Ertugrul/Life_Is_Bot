@@ -12,7 +12,6 @@ services:
 
   bot:
     image: life-is-bot:latest
-    profiles: ["!webhook"]
     command: python -m app.main
     env_file: .env
     environment:
