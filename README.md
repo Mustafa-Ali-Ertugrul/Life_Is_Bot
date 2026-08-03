@@ -73,6 +73,31 @@ curl http://localhost:8000/health
 
 Üç servis: `migrate` (tek seferlik migration), `bot` (polling, varsayılan), `api` (REST + healthcheck). Veriler `./data/`, yedekler `./backups/`, raporlar `./reports/` dizinlerinde volume olarak saklanır.
 
+#### GHCR'den (pre-built image)
+
+`main` ve `v*` tag'lerinde image `ghcr.io/mustafa-ali-ertugrul/life_is_bot`'a yayınlanır. Local build yapmak yerine pre-built image kullanmak için `docker-compose.yml`'deki üç `image:` alanını güncelle:
+
+```yaml
+services:
+  migrate:
+    image: ghcr.io/mustafa-ali-ertugrul/life_is_bot:latest
+    # build: .           # build satırını kaldır
+  bot:
+    image: ghcr.io/mustafa-ali-ertugrul/life_is_bot:latest
+  api:
+    image: ghcr.io/mustafa-ali-ertugrul/life_is_bot:latest
+```
+
+Sonra `--build` olmadan başlat:
+
+```bash
+docker compose up -d
+docker compose ps -a                    # migrate Exited(0), api Up(healthy)
+curl http://localhost:8000/health
+```
+
+Bu yol yine üç servisi (migrate + bot + api) çalıştırır; raw `docker run` image'i yalnızca polling bot'unu (`CMD ["python","-m","app.main"]`) başlatır, uvicorn/migration'ı içermez.
+
 #### Webhook Mode (production, public URL gerekli)
 
 ```bash
