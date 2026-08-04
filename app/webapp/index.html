@@ -4,558 +4,1020 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="var(--tg-theme-bg-color, #f7f8fa)">
-<title>Rutinbot</title>
+<title>Rutinbot Mini App</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
     --tg-bg: var(--tg-theme-bg-color, #f7f8fa);
-    --tg-bg-secondary: var(--tg-theme-secondary-bg-color, #eef1f4);
-    --tg-text: var(--tg-theme-text-color, #1b1b1f);
-    --tg-hint: var(--tg-theme-hint-color, #8b8e98);
-    --tg-accent: var(--tg-theme-button-color, #3b82f6);
+    --tg-bg-secondary: var(--tg-theme-secondary-bg-color, #ffffff);
+    --tg-text: var(--tg-theme-text-color, #1c1c1e);
+    --tg-hint: var(--tg-theme-hint-color, #8e8e93);
+    --tg-accent: var(--tg-theme-button-color, #007aff);
     --tg-accent-text: var(--tg-theme-button-text-color, #ffffff);
-    --tg-destructive: var(--tg-theme-destructive-text-color, #ef4444);
-    --radius: 14px;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--tg-bg);
     color: var(--tg-text);
     min-height: 100vh;
-    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    padding-bottom: 84px; /* Space for bottom nav */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--tg-bg);
+    backdrop-filter: blur(10px);
+    padding: calc(max(12px, env(safe-area-inset-top))) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+  header p { font-size: 13px; color: var(--tg-hint); }
+
+  /* Main Container */
+  main {
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
 
-  header { text-align: center; padding: 8px 0; }
-  header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-  header p { color: var(--tg-hint); font-size: 14px; margin-top: 4px; }
-
-  .card {
-    background: var(--tg-bg-secondary);
-    border-radius: var(--radius);
-    padding: 16px;
-    box-shadow: var(--shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
   .hidden { display: none !important; }
 
-  .section-head {
+  /* Bottom Navigation */
+  nav.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--tg-bg-secondary);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 4px calc(max(6px, env(safe-area-inset-bottom)));
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+    background: transparent;
+    border: none;
+    color: var(--tg-hint);
+    cursor: pointer;
+    gap: 3px;
+    transition: color 0.15s, transform 0.1s;
+  }
+  .nav-item:active { transform: scale(0.95); }
+  .nav-item.active { color: var(--tg-accent); font-weight: 600; }
+  .nav-item .icon { font-size: 20px; line-height: 1; }
+  .nav-item .label { font-size: 10px; font-weight: 500; }
+
+  /* Card Component */
+  .card {
+    background: var(--tg-bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .section-head h2 { font-size: 16px; font-weight: 700; }
+  .card-title { font-size: 17px; font-weight: 700; }
+  .card-subtitle { font-size: 13px; color: var(--tg-hint); margin-top: 2px; }
 
-  .icon-btn {
-    border: none;
-    background: var(--tg-bg);
-    color: var(--tg-text);
+  /* Action Buttons */
+  .btn-icon {
     width: 34px;
     height: 34px;
-    border-radius: 10px;
-    font-size: 16px;
+    border-radius: 50%;
+    background: var(--tg-bg);
+    border: none;
+    color: var(--tg-accent);
+    font-size: 18px;
+    font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  .icon-btn:active { opacity: 0.7; }
+  .btn-icon:active { opacity: 0.7; }
 
-  .streak-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .streak-item {
-    background: var(--tg-bg);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-  }
-  .streak-item .value { font-size: 28px; font-weight: 800; }
-  .streak-item .label { font-size: 12px; color: var(--tg-hint); margin-top: 2px; }
-
-  .badge {
+  .btn {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.15s;
   }
-  .badge.ok { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
-  .badge.wait { background: var(--tg-bg); color: var(--tg-hint); }
+  .btn.primary { background: var(--tg-accent); color: var(--tg-accent-text); }
+  .btn.secondary { background: var(--tg-bg); color: var(--tg-text); }
+  .btn.destructive { background: rgba(255, 59, 48, 0.1); color: var(--tg-destructive); }
+  .btn:active { opacity: 0.8; }
 
-  .habit {
+  /* List Items */
+  .item-list { display: flex; flex-direction: column; gap: 10px; }
+  .item-row {
     background: var(--tg-bg);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
   }
-  .habit .info { flex: 1; min-width: 0; }
-  .habit .name { font-size: 15px; font-weight: 600; }
-  .habit .meta { font-size: 12px; color: var(--tg-hint); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .habit.off .name { color: var(--tg-hint); text-decoration: line-through; }
+  .item-main { flex: 1; min-width: 0; }
+  .item-title { font-size: 15px; font-weight: 600; }
+  .item-sub { font-size: 12px; color: var(--tg-hint); margin-top: 3px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .item-row.disabled .item-title { color: var(--tg-hint); text-decoration: line-through; }
 
+  /* Switch Toggle */
   .switch {
     position: relative;
-    width: 44px;
-    height: 26px;
+    width: 46px;
+    height: 28px;
     flex-shrink: 0;
-    border-radius: 999px;
-    background: var(--tg-hint);
+    border-radius: 14px;
+    background: #e9e9ea;
     border: none;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.2s;
   }
   .switch::after {
     content: "";
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: #ffffff;
-    transition: transform 0.15s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
-  .switch.on { background: var(--tg-accent); }
+  .switch.on { background: #34c759; }
   .switch.on::after { transform: translateX(18px); }
 
-  .del-btn {
+  .del-icon {
     border: none;
     background: transparent;
-    color: var(--tg-destructive);
+    color: var(--tg-hint);
     font-size: 16px;
     cursor: pointer;
-    padding: 6px;
-    flex-shrink: 0;
+    padding: 4px;
+    border-radius: 4px;
   }
-  .del-btn:active { opacity: 0.7; }
+  .del-icon:hover, .del-icon:active { color: var(--tg-destructive); }
 
-  .empty { color: var(--tg-hint); font-size: 14px; text-align: center; padding: 12px 0; }
+  /* Badges */
+  .badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--tg-accent);
+  }
 
-  form { display: flex; flex-direction: column; gap: 10px; }
+  /* Grid Stats */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .stat-box {
+    background: var(--tg-bg);
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: 800; color: var(--tg-accent); }
+  .stat-lbl { font-size: 11px; color: var(--tg-hint); margin-top: 2px; font-weight: 500; }
 
-  label { font-size: 12px; font-weight: 600; color: var(--tg-hint); }
-
-  input[type="text"],
-  input[type="time"] {
+  /* Form Elements */
+  form { display: flex; flex-direction: column; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: var(--tg-hint); text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type="text"], input[type="number"], input[type="time"], select {
     width: 100%;
     background: var(--tg-bg);
     border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    padding: 12px;
     color: var(--tg-text);
     font-size: 15px;
+    font-family: inherit;
   }
-  input[type="text"]:focus,
-  input[type="time"]:focus { outline: 2px solid var(--tg-accent); }
+  input:focus, select:focus { outline: 2px solid var(--tg-accent); background: var(--tg-bg-secondary); }
 
-  .days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-  }
-  .day {
+  .day-selector { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-btn {
     border: none;
     background: var(--tg-bg);
     color: var(--tg-text);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 8px 0;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
   }
-  .day.selected { background: var(--tg-accent); color: var(--tg-accent-text); }
+  .day-btn.selected { background: var(--tg-accent); color: var(--tg-accent-text); }
 
-  .btn {
-    border: none;
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
   }
-  .btn.primary { background: var(--tg-accent); color: var(--tg-accent-text); }
-  .btn.secondary { background: var(--tg-bg); color: var(--tg-text); }
-  .btn:active { opacity: 0.8; }
-
-  .notice {
+  .modal-content {
     background: var(--tg-bg-secondary);
-    border-radius: var(--radius);
-    padding: 16px;
-    text-align: center;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--tg-text);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px 16px 32px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    animation: slideUp 0.25s ease-out;
   }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-  footer {
+  .empty-state {
     text-align: center;
+    padding: 24px 12px;
     color: var(--tg-hint);
-    font-size: 12px;
-    padding: 8px 0 16px;
+    font-size: 14px;
   }
 
-  .toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: #ffffff;
-    padding: 10px 16px;
-    border-radius: 999px;
-    font-size: 13px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-    z-index: 10;
-  }
-  .toast.show { opacity: 1; }
+  /* Progress Bar */
+  .progress-bg { background: var(--tg-bg); height: 8px; border-radius: 4px; overflow: hidden; }
+  .progress-fill { background: #34c759; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
 </style>
 </head>
 <body>
-  <header>
-    <h1>Rutinbot</h1>
-    <p id="subtitle">Alışkanlıklarını gör, serini koru</p>
-  </header>
 
-  <section id="outside-notice" class="notice hidden">
-    <div>Bu sayfa Telegram Mini App olarak kullanılmak üzere tasarlandı.</div>
-    <div>Lütfen <a href="https://t.me/Lifee_Is_Bot" target="_blank" rel="noopener">@Lifee_Is_Bot</a> üzerinden açın.</div>
-  </section>
+<header>
+  <div>
+    <h1 id="header-title">Rutinlerim</h1>
+    <p id="user-greeting">Hoş geldin 👋</p>
+  </div>
+  <button class="btn-icon" id="btn-open-add">+</button>
+</header>
 
-  <section id="register-notice" class="notice hidden">
-    <div>Bu bot seni henüz tanımıyor.</div>
-    <div>Önce <strong>@Lifee_Is_Bot</strong>'a <strong>/start</strong> gönder, sonra bu uygulamayı tekrar aç.</div>
-    <div><button id="reload-btn" class="btn primary" type="button">Tekrar dene</button></div>
-  </section>
+<!-- Notice Banner for Unauthenticated/Onboarding State -->
+<div id="auth-notice" class="card hidden">
+  <div class="card-title">⚠️ Profil Bulunamadı</div>
+  <div class="card-subtitle">Mini App'i tam kullanabilmek için lütfen önce Telegram botunda /start yazıp profilini oluştur veya doğrula.</div>
+</div>
 
-  <section id="streak-card" class="card hidden">
-    <div class="section-head">
-      <h2>Seri</h2>
-      <span id="streak-badge" class="badge wait">…</span>
-    </div>
-    <div class="streak-grid">
-      <div class="streak-item">
-        <div id="streak-current" class="value">0</div>
-        <div class="label">Günlük seri</div>
+<main>
+
+  <!-- 1. TAB: HABITS (RUTİNLER) -->
+  <section id="tab-habits" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔥 Rutin Serisi</div>
+          <div class="card-subtitle">Günlük alışkanlık durumun</div>
+        </div>
       </div>
-      <div class="streak-item">
-        <div id="streak-longest" class="value">0</div>
-        <div class="label">En uzun seri</div>
+      <div class="grid-2">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-current-streak">0</div>
+          <div class="stat-lbl">Mevcut Seri (Gün)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-longest-streak">0</div>
+          <div class="stat-lbl">En Uzun Seri</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📌 Rutin Listesi</div>
+      </div>
+      <div class="item-list" id="list-habits">
+        <div class="empty-state">Yükleniyor...</div>
       </div>
     </div>
   </section>
 
-  <section id="habits-section" class="card hidden">
-    <div class="section-head">
-      <h2>Alışkanlıklar</h2>
-      <button id="refresh-btn" class="icon-btn" type="button" title="Yenile">↻</button>
+
+  <!-- 2. TAB: SPOR -->
+  <section id="tab-sport" class="tab-content hidden">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🏋️ Spor & Aktivite Planları</div>
+          <div class="card-subtitle">Haftalık antrenman takvimin</div>
+        </div>
+      </div>
+      <div class="item-list" id="list-sports">
+        <div class="empty-state">Yükleniyor...</div>
+      </div>
     </div>
-    <div id="habits-list"></div>
-    <div id="empty-state" class="empty hidden">Henüz alışkanlık yok. Aşağıdan ilkini ekle.</div>
   </section>
 
-  <section id="add-section" class="card hidden">
-    <button id="add-btn" class="btn primary" type="button">+ Alışkanlık ekle</button>
-    <form id="habit-form" class="hidden">
-      <label for="habit-name">Alışkanlık adı</label>
-      <input id="habit-name" type="text" maxlength="255" placeholder="örn. 30 dk yürüyüş" required>
-      <label for="habit-time">Hedef saat</label>
-      <input id="habit-time" type="time" required>
-      <label>Tekrar günleri</label>
-      <div id="day-picker" class="days"></div>
-      <button class="btn primary" type="submit">Kaydet</button>
-      <button id="cancel-btn" class="btn secondary" type="button">Vazgeç</button>
+
+  <!-- 3. TAB: TAKVİYE -->
+  <section id="tab-supplements" class="tab-content hidden">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">💊 Takviye & Vitaminler</div>
+          <div class="card-subtitle">Düzenli kullandığın takviyeler</div>
+        </div>
+      </div>
+      <div class="item-list" id="list-supplements">
+        <div class="empty-state">Yükleniyor...</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 4. TAB: İLAÇLAR -->
+  <section id="tab-medications" class="tab-content hidden">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🩸 İlaç Takibi</div>
+          <div class="card-subtitle">Reçeteli ve düzenli ilaçların</div>
+        </div>
+      </div>
+      <div class="item-list" id="list-medications">
+        <div class="empty-state">Yükleniyor...</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 5. TAB: ADIM -->
+  <section id="tab-steps" class="tab-content hidden">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🚶 Günlük Adım Hedefi</div>
+          <div class="card-subtitle" id="step-target-label">Hedef: 10.000 adım</div>
+        </div>
+        <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="openStepGoalModal()">Düzenle</button>
+      </div>
+      
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
+          <span>Bugün Atılan: <strong id="step-today-count">0</strong></span>
+          <span id="step-percent">%0</span>
+        </div>
+        <div class="progress-bg">
+          <div class="progress-fill" id="step-progress-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">➕ Bugün İçin Adım Kaydet</div>
+      </div>
+      <form id="form-log-steps" onsubmit="handleLogSteps(event)">
+        <div class="form-group">
+          <label>Adım Sayısı</label>
+          <input type="number" id="input-step-count" placeholder="Örn: 7500" min="1" max="200000" required>
+        </div>
+        <button type="submit" class="btn primary">Adım Sayısını Kaydet</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 Adım Geçmişi</div>
+      </div>
+      <div class="item-list" id="list-step-logs">
+        <div class="empty-state">Kayıt bulunamadı.</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 6. TAB: GENEL ÖZET -->
+  <section id="tab-reports" class="tab-content hidden">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 Tamamlama Özet Raporu</div>
+      </div>
+      <div class="grid-2">
+        <div class="stat-box">
+          <div class="stat-num" id="report-daily-rate">%0</div>
+          <div class="stat-lbl">Bugünün Oranı</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="report-weekly-rate">%0</div>
+          <div class="stat-lbl">Haftalık Oran</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🤖 Aktif Bot Servisleri</div>
+      </div>
+      <div class="item-list">
+        <div class="item-row">
+          <div class="item-main"><div class="item-title">📌 Rutin Takibi</div></div>
+          <span class="badge">Aktif</span>
+        </div>
+        <div class="item-row">
+          <div class="item-main"><div class="item-title">🏋️ Spor Botu</div></div>
+          <span class="badge">Aktif</span>
+        </div>
+        <div class="item-row">
+          <div class="item-main"><div class="item-title">💊 Takviye Botu</div></div>
+          <span class="badge">Aktif</span>
+        </div>
+        <div class="item-row">
+          <div class="item-main"><div class="item-title">🩸 İlaç Botu</div></div>
+          <span class="badge">Aktif</span>
+        </div>
+        <div class="item-row">
+          <div class="item-main"><div class="item-title">🚶 Adım Botu</div></div>
+          <span class="badge">Aktif</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-tab="habits" onclick="switchTab('habits')">
+    <span class="icon">📌</span>
+    <span class="label">Rutinler</span>
+  </button>
+  <button class="nav-item" data-tab="sport" onclick="switchTab('sport')">
+    <span class="icon">🏋️</span>
+    <span class="label">Spor</span>
+  </button>
+  <button class="nav-item" data-tab="supplements" onclick="switchTab('supplements')">
+    <span class="icon">💊</span>
+    <span class="label">Takviye</span>
+  </button>
+  <button class="nav-item" data-tab="medications" onclick="switchTab('medications')">
+    <span class="icon">🩸</span>
+    <span class="label">İlaçlar</span>
+  </button>
+  <button class="nav-item" data-tab="steps" onclick="switchTab('steps')">
+    <span class="icon">🚶</span>
+    <span class="label">Adım</span>
+  </button>
+  <button class="nav-item" data-tab="reports" onclick="switchTab('reports')">
+    <span class="icon">📊</span>
+    <span class="label">Özet</span>
+  </button>
+</nav>
+
+
+<!-- MODAL: ADD / EDIT ITEM -->
+<div id="modal-add" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="card-header">
+      <div class="card-title" id="modal-title">Yeni Öğe Ekle</div>
+      <button class="del-icon" onclick="closeModal()" style="font-size:20px;">✕</button>
+    </div>
+    
+    <!-- Dynamic Form Container -->
+    <form id="modal-form" onsubmit="handleFormSubmit(event)">
+      <div id="modal-form-fields"></div>
+      <button type="submit" class="btn primary" style="margin-top:8px;">Kaydet</button>
     </form>
-  </section>
-
-  <footer>Küçük adımlar, büyük sonuçlar.</footer>
-
-  <div id="toast" class="toast"></div>
+  </div>
+</div>
 
 <script>
-(function () {
-  "use strict";
-
-  var DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-  var API = window.location.origin;
-  var habits = [];
-  var isTelegram = !!(window.Telegram && window.Telegram.WebApp && Telegram.WebApp.initData);
-
-  var $ = function (id) { return document.getElementById(id); };
-  var show = function (el) { el.classList.remove("hidden"); };
-  var hide = function (el) { el.classList.add("hidden"); };
-
-  var toastTimer = null;
-  function toast(message) {
-    var el = $("toast");
-    el.textContent = message;
-    el.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2200);
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
   }
 
-  function authHeaders() {
-    if (!isTelegram) return {};
-    return { Authorization: "Bearer " + Telegram.WebApp.initData };
+  const API_BASE = '/api/v1';
+  let activeTab = 'habits';
+
+  // Helper function for API calls
+  async function api(path, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (tg?.initData) {
+      headers['Authorization'] = 'Bearer ' + tg.initData;
+    }
+    const res = await fetch(API_BASE + path, { ...options, headers });
+    if (res.status === 401) {
+      document.getElementById('auth-notice').classList.remove('hidden');
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Sunucu hatası' }));
+      throw new Error(err.detail || 'İstek başarısız');
+    }
+    if (res.status === 204) return null;
+    return res.json();
   }
 
-  function api(path, options) {
-    var opts = options || {};
-    opts.headers = Object.assign(
-      { "Content-Type": "application/json" },
-      authHeaders(),
-      opts.headers || {}
-    );
-    return fetch(API + path, opts);
+  function haptic(style = 'light') {
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style);
+    }
   }
 
-  function fmtTime(hour, minute) {
-    return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+  // Set user greeting
+  if (tg?.initDataUnsafe?.user) {
+    const u = tg.initDataUnsafe.user;
+    document.getElementById('user-greeting').textContent = `Hoş geldin, ${u.first_name || 'Kullanıcı'} 👋`;
   }
 
-  function fmtDays(days) {
-    var sorted = days.split(",").map(Number).sort(function (a, b) { return a - b; });
-    return sorted.map(function (d) { return DAYS[d - 1]; }).join(", ");
+  // TAB SWITCHING
+  function switchTab(tabId) {
+    haptic('light');
+    activeTab = tabId;
+    
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    document.querySelector(`.nav-item[data-tab="${tabId}"]`).classList.add('active');
+
+    const titles = {
+      habits: 'Rutinlerim',
+      sport: 'Spor Planlarım',
+      supplements: 'Takviyelerim',
+      medications: 'İlaç Takibi',
+      steps: 'Adım Takibi',
+      reports: 'Genel Özet'
+    };
+    document.getElementById('header-title').textContent = titles[tabId] || 'Rutinbot';
+
+    loadTabData(tabId);
   }
 
-  async function loadData() {
+  function loadTabData(tabId) {
+    switch (tabId) {
+      case 'habits': loadHabits(); loadStreak(); break;
+      case 'sport': loadSports(); break;
+      case 'supplements': loadSupplements(); break;
+      case 'medications': loadMedications(); break;
+      case 'steps': loadStepSettings(); loadStepLogs(); break;
+      case 'reports': loadReports(); break;
+    }
+  }
+
+  // DAYS HELPERS
+  const DAYS_TR = { MON: 'Pzt', TUE: 'Sal', WED: 'Çar', THU: 'Per', FRI: 'Cum', SAT: 'Cmt', SUN: 'Paz' };
+  const ALL_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+  function fmtDays(daysStr) {
+    if (!daysStr) return 'Her gün';
+    const arr = daysStr.split(',');
+    if (arr.length === 7) return 'Her gün';
+    if (arr.length === 5 && !arr.includes('SAT') && !arr.includes('SUN')) return 'Hafta içi';
+    if (arr.length === 2 && arr.includes('SAT') && arr.includes('SUN')) return 'Hafta sonu';
+    return arr.map(d => DAYS_TR[d] || d).join(', ');
+  }
+
+  // 1. RUTİNLER (HABITS)
+  async function loadHabits() {
+    const listEl = document.getElementById('list-habits');
     try {
-      var [streakRes, habitsRes] = await Promise.all([
-        api("/api/reports/streak"),
-        api("/api/habits")
-      ]);
-
-      if (streakRes.status === 401 || habitsRes.status === 401) {
-        showStartNotice();
+      const data = await api('/habits');
+      if (!data.items || data.items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Henüz rutin eklenmemiş. Sağ üstteki + ile hemen başla!</div>';
         return;
       }
-      if (!streakRes.ok || !habitsRes.ok) {
-        toast("Yükleme başarısız (" + (streakRes.status || habitsRes.status) + ")");
+      listEl.innerHTML = data.items.map(h => `
+        <div class="item-row ${!h.enabled ? 'disabled' : ''}">
+          <div class="item-main">
+            <div class="item-title">${h.title}</div>
+            <div class="item-sub">
+              <span>⏰ ${h.reminder_time || 'Hatırlatmasız'}</span>
+              <span>📅 ${fmtDays(h.days_of_week)}</span>
+            </div>
+          </div>
+          <button class="switch ${h.enabled ? 'on' : ''}" onclick="toggleHabit(${h.id}, ${!h.enabled})"></button>
+          <button class="del-icon" onclick="deleteHabit(${h.id})">🗑️</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+    }
+  }
+
+  async function loadStreak() {
+    try {
+      const s = await api('/reports/streak');
+      document.getElementById('stat-current-streak').textContent = s.current_streak || 0;
+      document.getElementById('stat-longest-streak').textContent = s.longest_streak || 0;
+    } catch (e) {}
+  }
+
+  async function toggleHabit(id, enabled) {
+    haptic('medium');
+    await api(`/habits/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) });
+    loadHabits();
+  }
+
+  async function deleteHabit(id) {
+    if (!confirm('Bu rutini silmek istediğine emin misin?')) return;
+    haptic('warning');
+    await api(`/habits/${id}`, { method: 'DELETE' });
+    loadHabits();
+  }
+
+  // 2. SPOR (SPORT)
+  async function loadSports() {
+    const listEl = document.getElementById('list-sports');
+    try {
+      const data = await api('/sport');
+      if (!data.items || data.items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Henüz spor planı eklenmemiş.</div>';
         return;
       }
-
-      var streak = await streakRes.json();
-      var page = await habitsRes.json();
-      habits = page.items || [];
-
-      hide($("register-notice"));
-      renderStreak(streak);
-      renderHabits();
-    } catch (err) {
-      toast("Bağlantı hatası");
+      listEl.innerHTML = data.items.map(s => `
+        <div class="item-row ${!s.enabled ? 'disabled' : ''}">
+          <div class="item-main">
+            <div class="item-title">${s.activity_type}</div>
+            <div class="item-sub">
+              <span>⏱️ ${s.duration_minutes ? s.duration_minutes + ' dk' : 'Süresiz'}</span>
+              <span>⏰ ${s.time_of_day || 'Saat yok'}</span>
+              <span>📅 ${fmtDays(s.days_of_week)}</span>
+            </div>
+          </div>
+          <button class="switch ${s.enabled ? 'on' : ''}" onclick="toggleSport(${s.id}, ${!s.enabled})"></button>
+          <button class="del-icon" onclick="deleteSport(${s.id})">🗑️</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
     }
   }
 
-  function showStartNotice() {
-    show($("register-notice"));
-    hide($("streak-card"));
-    hide($("habits-section"));
+  async function toggleSport(id, enabled) {
+    haptic('medium');
+    await api(`/sport/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) });
+    loadSports();
   }
 
-  function renderStreak(streak) {
-    $("streak-current").textContent = streak.current;
-    $("streak-longest").textContent = streak.longest;
-    var badge = $("streak-badge");
-    if (streak.today_completed) {
-      badge.textContent = "Bugün tamamlandı ✓";
-      badge.className = "badge ok";
-    } else {
-      badge.textContent = "Bugün bekliyor";
-      badge.className = "badge wait";
-    }
-    show($("streak-card"));
+  async function deleteSport(id) {
+    if (!confirm('Spor planını silmek istediğine emin misin?')) return;
+    haptic('warning');
+    await api(`/sport/${id}`, { method: 'DELETE' });
+    loadSports();
   }
 
-  function renderHabits() {
-    var list = $("habits-list");
-    list.textContent = "";
-
-    if (!habits.length) {
-      show($("empty-state"));
-      return;
-    }
-    hide($("empty-state"));
-
-    habits.forEach(function (habit) {
-      var row = document.createElement("div");
-      row.className = "habit" + (habit.is_active ? "" : " off");
-
-      var info = document.createElement("div");
-      info.className = "info";
-      var name = document.createElement("div");
-      name.className = "name";
-      name.textContent = habit.name;
-      var meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = fmtTime(habit.target_hour, habit.target_minute) + " · " + fmtDays(habit.days_of_week);
-      info.appendChild(name);
-      info.appendChild(meta);
-
-      var toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "switch" + (habit.is_active ? " on" : "");
-      toggle.title = habit.is_active ? "Pasife al" : "Aktifleştir";
-      toggle.addEventListener("click", function () {
-        setActive(habit, !habit.is_active);
-      });
-
-      var del = document.createElement("button");
-      del.type = "button";
-      del.className = "del-btn";
-      del.textContent = "🗑";
-      del.title = "Sil";
-      del.addEventListener("click", function () {
-        if (window.confirm("\"" + habit.name + "\" silinsin mi?")) removeHabit(habit);
-      });
-
-      row.appendChild(info);
-      row.appendChild(toggle);
-      row.appendChild(del);
-      list.appendChild(row);
-    });
-  }
-
-  async function setActive(habit, active) {
+  // 3. TAKVİYE (SUPPLEMENTS)
+  async function loadSupplements() {
+    const listEl = document.getElementById('list-supplements');
     try {
-      var res = await api("/api/habits/" + habit.id, {
-        method: "PATCH",
-        body: JSON.stringify({ is_active: active })
-      });
-      if (!res.ok) { toast("Güncellenemedi"); return; }
-      habit.is_active = active;
-      renderHabits();
-    } catch (err) {
-      toast("Bağlantı hatası");
-    }
-  }
-
-  async function removeHabit(habit) {
-    try {
-      var res = await api("/api/habits/" + habit.id, { method: "DELETE" });
-      if (!res.ok && res.status !== 204) { toast("Silinemedi"); return; }
-      habits = habits.filter(function (h) { return h.id !== habit.id; });
-      renderHabits();
-      toast("Silindi");
-    } catch (err) {
-      toast("Bağlantı hatası");
-    }
-  }
-
-  function buildDayPicker() {
-    var picker = $("day-picker");
-    DAYS.forEach(function (label, i) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "day selected";
-      btn.textContent = label;
-      btn.dataset.day = String(i + 1);
-      btn.addEventListener("click", function () {
-        var on = btn.classList.toggle("selected");
-        btn.setAttribute("aria-pressed", on ? "true" : "false");
-      });
-      picker.appendChild(btn);
-    });
-  }
-
-  function selectedDays() {
-    var btns = $("day-picker").querySelectorAll(".day.selected");
-    return Array.prototype.map.call(btns, function (b) { return b.dataset.day; }).join(",");
-  }
-
-  async function createHabit(name, time, days) {
-    var parts = time.split(":");
-    try {
-      var res = await api("/api/habits", {
-        method: "POST",
-        body: JSON.stringify({
-          name: name,
-          target_hour: Number(parts[0]),
-          target_minute: Number(parts[1]),
-          days_of_week: days
-        })
-      });
-      if (!res.ok) {
-        toast("Eklenemedi");
-        return false;
+      const data = await api('/supplements');
+      if (!data.items || data.items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Henüz takviye planı eklenmemiş.</div>';
+        return;
       }
-      await loadData();
-      toast("Eklendi");
-      return true;
-    } catch (err) {
-      toast("Bağlantı hatası");
-      return false;
+      listEl.innerHTML = data.items.map(s => `
+        <div class="item-row ${!s.enabled ? 'disabled' : ''}">
+          <div class="item-main">
+            <div class="item-title">${s.name} ${s.dosage ? '(' + s.dosage + ')' : ''}</div>
+            <div class="item-sub">
+              <span>⏰ ${s.reminder_time || s.time_of_day_label || 'Saat yok'}</span>
+              <span>📅 ${fmtDays(s.days_of_week)}</span>
+            </div>
+          </div>
+          <button class="switch ${s.enabled ? 'on' : ''}" onclick="toggleSupplement(${s.id}, ${!s.enabled})"></button>
+          <button class="del-icon" onclick="deleteSupplement(${s.id})">🗑️</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
     }
   }
 
-  function closeForm() {
-    hide($("habit-form"));
-    show($("add-btn"));
+  async function toggleSupplement(id, enabled) {
+    haptic('medium');
+    await api(`/supplements/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) });
+    loadSupplements();
   }
 
-  function openForm() {
-    hide($("add-btn"));
-    show($("habit-form"));
-    $("habit-name").focus();
+  async function deleteSupplement(id) {
+    if (!confirm('Takviye planını silmek istediğine emin misin?')) return;
+    haptic('warning');
+    await api(`/supplements/${id}`, { method: 'DELETE' });
+    loadSupplements();
   }
 
-  $("refresh-btn").addEventListener("click", loadData);
-  $("reload-btn").addEventListener("click", loadData);
-  $("add-btn").addEventListener("click", openForm);
-  $("cancel-btn").addEventListener("click", closeForm);
+  // 4. İLAÇLAR (MEDICATIONS)
+  async function loadMedications() {
+    const listEl = document.getElementById('list-medications');
+    try {
+      const data = await api('/medications');
+      if (!data.items || data.items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Henüz ilaç planı eklenmemiş.</div>';
+        return;
+      }
+      listEl.innerHTML = data.items.map(m => `
+        <div class="item-row ${!m.enabled ? 'disabled' : ''}">
+          <div class="item-main">
+            <div class="item-title">${m.name} ${m.dose ? '(' + m.dose + ')' : ''}</div>
+            <div class="item-sub">
+              <span>⏰ ${m.time_of_day || 'Saat yok'}</span>
+              <span>🍽️ ${m.with_food || 'Aç/Tok fark etmez'}</span>
+              <span>📅 ${fmtDays(m.days_of_week)}</span>
+            </div>
+          </div>
+          <button class="switch ${m.enabled ? 'on' : ''}" onclick="toggleMedication(${m.id}, ${!m.enabled})"></button>
+          <button class="del-icon" onclick="deleteMedication(${m.id})">🗑️</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+    }
+  }
 
-  $("habit-form").addEventListener("submit", function (e) {
+  async function toggleMedication(id, enabled) {
+    haptic('medium');
+    await api(`/medications/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) });
+    loadMedications();
+  }
+
+  async function deleteMedication(id) {
+    if (!confirm('İlaç planını silmek istediğine emin misin?')) return;
+    haptic('warning');
+    await api(`/medications/${id}`, { method: 'DELETE' });
+    loadMedications();
+  }
+
+  // 5. ADIM (STEPS)
+  let currentStepSettings = { daily_goal: 10000 };
+
+  async function loadStepSettings() {
+    try {
+      const s = await api('/step/settings');
+      currentStepSettings = s;
+      document.getElementById('step-target-label').textContent = `Hedef: ${(s.daily_goal || 10000).toLocaleString('tr-TR')} adım`;
+      updateStepProgress();
+    } catch (e) {}
+  }
+
+  async function loadStepLogs() {
+    const listEl = document.getElementById('list-step-logs');
+    try {
+      const logs = await api('/step/logs');
+      if (!logs || logs.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Henüz adım kaydı bulunmuyor.</div>';
+        return;
+      }
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayLog = logs.find(l => l.log_date === todayStr);
+      const todayCount = todayLog ? todayLog.step_count : 0;
+
+      document.getElementById('step-today-count').textContent = todayCount.toLocaleString('tr-TR');
+      updateStepProgress(todayCount);
+
+      listEl.innerHTML = logs.slice(0, 10).map(l => `
+        <div class="item-row">
+          <div class="item-main">
+            <div class="item-title">${l.step_count.toLocaleString('tr-TR')} adım</div>
+            <div class="item-sub">📅 ${l.log_date}</div>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+    }
+  }
+
+  function updateStepProgress(todayCount = 0) {
+    const goal = currentStepSettings.daily_goal || 10000;
+    const pct = Math.min(100, Math.round((todayCount / goal) * 100));
+    document.getElementById('step-percent').textContent = `%${pct}`;
+    document.getElementById('step-progress-bar').style.width = `${pct}%`;
+  }
+
+  async function handleLogSteps(e) {
     e.preventDefault();
-    var name = $("habit-name").value.trim();
-    var time = $("habit-time").value;
-    var days = selectedDays();
-    if (!name || !time || !days) {
-      toast("Tüm alanları doldur");
-      return;
-    }
-    createHabit(name, time, days).then(function (ok) {
-      if (ok) closeForm();
+    const count = parseInt(document.getElementById('input-step-count').value);
+    if (!count) return;
+    haptic('success');
+    const todayStr = new Date().toISOString().split('T')[0];
+    await api('/step/logs', {
+      method: 'POST',
+      body: JSON.stringify({ log_date: todayStr, step_count: count })
     });
-  });
-
-  if (!isTelegram) {
-    show($("outside-notice"));
-    return;
+    document.getElementById('input-step-count').value = '';
+    loadStepLogs();
   }
 
-  if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-    $("subtitle").textContent = "Hoş geldin, " + Telegram.WebApp.initDataUnsafe.user.first_name + " 👋";
+  function openStepGoalModal() {
+    haptic('light');
+    const container = document.getElementById('modal-form-fields');
+    document.getElementById('modal-title').textContent = 'Adım Hedefini Düzenle';
+    container.innerHTML = `
+      <div class="form-group">
+        <label>Günlük Adım Hedefi</label>
+        <input type="number" id="form-step-goal" value="${currentStepSettings.daily_goal || 10000}" min="1000" max="100000" required>
+      </div>
+    `;
+    document.getElementById('modal-add').classList.remove('hidden');
+    document.getElementById('modal-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const goal = parseInt(document.getElementById('form-step-goal').value);
+      await api('/step/settings', { method: 'PATCH', body: JSON.stringify({ daily_goal: goal }) });
+      closeModal();
+      loadStepSettings();
+    };
   }
 
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
-  if (Telegram.WebApp.disableVerticalSwipes) Telegram.WebApp.disableVerticalSwipes();
+  // 6. RAPORLAR (REPORTS)
+  async function loadReports() {
+    try {
+      const daily = await api('/reports/daily');
+      const rate = Math.round((daily.completion_rate || 0) * 100);
+      document.getElementById('report-daily-rate').textContent = `%${rate}`;
+    } catch (e) {}
 
-  buildDayPicker();
-  show($("streak-card"));
-  show($("habits-section"));
-  show($("add-section"));
-  loadData();
-})();
+    try {
+      const weekly = await api('/reports/weekly');
+      const rate = Math.round((weekly.overall_completion_rate || 0) * 100);
+      document.getElementById('report-weekly-rate').textContent = `%${rate}`;
+    } catch (e) {}
+  }
+
+
+  // DYNAMIC ADD MODAL
+  document.getElementById('btn-open-add').onclick = () => {
+    haptic('light');
+    openAddModal(activeTab);
+  };
+
+  function closeModal() {
+    document.getElementById('modal-add').classList.add('hidden');
+  }
+
+  function openAddModal(tab) {
+    const container = document.getElementById('modal-form-fields');
+    const modalTitle = document.getElementById('modal-title');
+    document.getElementById('modal-add').classList.remove('hidden');
+
+    if (tab === 'habits') {
+      modalTitle.textContent = 'Yeni Rutin Ekle';
+      container.innerHTML = `
+        <div class="form-group">
+          <label>Rutin Adı</label>
+          <input type="text" id="field-title" placeholder="Örn: Kitap Oku" required>
+        </div>
+        <div class="form-group">
+          <label>Hatırlatma Saati</label>
+          <input type="time" id="field-time" value="09:00">
+        </div>
+      `;
+      document.getElementById('modal-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('field-title').value;
+        const reminder_time = document.getElementById('field-time').value || null;
+        await api('/habits', { method: 'POST', body: JSON.stringify({ title, reminder_time }) });
+        closeModal();
+        loadHabits();
+      };
+    } 
+    else if (tab === 'sport') {
+      modalTitle.textContent = 'Yeni Spor Planı Ekle';
+      container.innerHTML = `
+        <div class="form-group">
+          <label>Aktivite Türü</label>
+          <input type="text" id="field-activity" placeholder="Örn: Koşu, Fitness" required>
+        </div>
+        <div class="form-group">
+          <label>Süre (Dakika)</label>
+          <input type="number" id="field-duration" placeholder="Örn: 45" min="5" max="300">
+        </div>
+        <div class="form-group">
+          <label>Hatırlatma Saati</label>
+          <input type="time" id="field-time" value="18:00">
+        </div>
+      `;
+      document.getElementById('modal-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const activity_type = document.getElementById('field-activity').value;
+        const duration_minutes = parseInt(document.getElementById('field-duration').value) || null;
+        const time_of_day = document.getElementById('field-time').value || null;
+        await api('/sport', { method: 'POST', body: JSON.stringify({ activity_type, duration_minutes, time_of_day }) });
+        closeModal();
+        loadSports();
+      };
+    }
+    else if (tab === 'supplements') {
+      modalTitle.textContent = 'Yeni Takviye Ekle';
+      container.innerHTML = `
+        <div class="form-group">
+          <label>Takviye Adı</label>
+          <input type="text" id="field-name" placeholder="Örn: Omega 3, D3 Vitamini" required>
+        </div>
+        <div class="form-group">
+          <label>Dozaj</label>
+          <input type="text" id="field-dosage" placeholder="Örn: 1 Kapsül, 1000 mg">
+        </div>
+        <div class="form-group">
+          <label>Hatırlatma Saati</label>
+          <input type="time" id="field-time" value="08:30">
+        </div>
+      `;
+      document.getElementById('modal-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('field-name').value;
+        const dosage = document.getElementById('field-dosage').value || null;
+        const reminder_time = document.getElementById('field-time').value || null;
+        await api('/supplements', { method: 'POST', body: JSON.stringify({ name, dosage, reminder_time }) });
+        closeModal();
+        loadSupplements();
+      };
+    }
+    else if (tab === 'medications') {
+      modalTitle.textContent = 'Yeni İlaç Ekle';
+      container.innerHTML = `
+        <div class="form-group">
+          <label>İlaç Adı</label>
+          <input type="text" id="field-name" placeholder="Örn: Parol" required>
+        </div>
+        <div class="form-group">
+          <label>Doz</label>
+          <input type="text" id="field-dose" placeholder="Örn: 500 mg, 1 Tablet">
+        </div>
+        <div class="form-group">
+          <label>Aç / Tok Durumu</label>
+          <select id="field-food">
+            <option value="Tok">Tok</option>
+            <option value="Aç">Aç</option>
+            <option value="Fark etmez">Fark etmez</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Saat</label>
+          <input type="time" id="field-time" value="12:00">
+        </div>
+      `;
+      document.getElementById('modal-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('field-name').value;
+        const dose = document.getElementById('field-dose').value || null;
+        const with_food = document.getElementById('field-food').value;
+        const time_of_day = document.getElementById('field-time').value || null;
+        await api('/medications', { method: 'POST', body: JSON.stringify({ name, dose, with_food, time_of_day }) });
+        closeModal();
+        loadMedications();
+      };
+    }
+    else if (tab === 'steps') {
+      openStepGoalModal();
+    }
+    else {
+      closeModal();
+    }
+  }
+
+  // Initial Load
+  switchTab('habits');
 </script>
 </body>
 </html>

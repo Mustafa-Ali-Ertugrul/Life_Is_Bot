@@ -23,5 +23,5 @@ async def test_webapp_served_without_auth(api_client: AsyncClient) -> None:
     response = await api_client.get("/webapp/")
 
     assert response.status_code == 200
-    assert "/api/habits" in response.text
-    assert "/api/reports/streak" in response.text
+    assert "/habits" in response.text
+    assert "/reports/streak" in response.text

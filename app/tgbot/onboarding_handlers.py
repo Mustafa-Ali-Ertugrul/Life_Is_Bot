@@ -185,12 +185,12 @@ async def onboarding_number_input(update: Update, context: ContextTypes.DEFAULT_
         await update.effective_message.reply_text(ONBOARDING_CHOICE_HINT)
         return ANSWER
 
-    raw = (update.effective_message.text or "").strip().replace(".", "").replace(",", "")
-    try:
-        value = int(raw)
-    except ValueError:
+    raw = (update.effective_message.text or "").strip()
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
         await update.effective_message.reply_text(ONBOARDING_INVALID_NUMBER)
         return ANSWER
+    value = int(digits)
     if not MIN_STEP_GOAL <= value <= MAX_STEP_GOAL:
         await update.effective_message.reply_text(ONBOARDING_INVALID_NUMBER)
         return ANSWER
