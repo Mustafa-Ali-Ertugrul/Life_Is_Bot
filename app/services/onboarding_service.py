@@ -91,17 +91,10 @@ PROFILE_BOTS: dict[str, list[BotKey]] = {
 }
 
 
-async def apply_profile_preferences(
-    session: AsyncSession, user_id: int, profile_type: str, flags: dict[str, bool]
-) -> None:
-    """Profil tipine göre bot preference'larını aç.
-
-    Sadece açar, kapatmaz — kullanıcının manuel kapattığı korunur.
-    Flag override'ları: uses_supplements, wants_steps her zaman açar.
-    """
+def compute_enabled_bots(profile_type: str, flags: dict[str, bool]) -> list[BotKey]:
+    """Profil + flag override'larına göre açılacak bot listesi."""
     bots_to_enable = set(PROFILE_BOTS.get(profile_type, []))
 
-    # Flag override'ları
     if flags.get("uses_supplements"):
         bots_to_enable.add(BotKey.SUPPLEMENT)
     if flags.get("wants_steps"):
@@ -111,7 +104,17 @@ async def apply_profile_preferences(
     if flags.get("wants_sport"):
         bots_to_enable.add(BotKey.SPORT)
 
-    for bot_key in bots_to_enable:
+    return sorted(bots_to_enable, key=lambda bot_key: bot_key.value)
+
+
+async def apply_profile_preferences(
+    session: AsyncSession, user_id: int, profile_type: str, flags: dict[str, bool]
+) -> None:
+    """Profil tipine göre bot preference'larını aç.
+
+    Sadece açar, kapatmaz — kullanıcının manuel kapattığı korunur.
+    """
+    for bot_key in compute_enabled_bots(profile_type, flags):
         await preference_service.toggle_preference(session, user_id, bot_key, enabled=True)
 
 
@@ -169,8 +172,9 @@ __all__ = [
     "PROFILE_CHRONIC",
     "PROFILE_GENERAL",
     "PROFILE_MIXED",
-    "apply_profile_preferences",
-    "compute_flags",
+        "apply_profile_preferences",
+        "compute_enabled_bots",
+        "compute_flags",
     "compute_profile_type",
     "finalize_onboarding",
     "get_answers",

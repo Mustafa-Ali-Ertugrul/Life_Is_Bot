@@ -128,7 +128,8 @@ ONBOARDING_QUESTIONS: list[OnboardingQuestion] = [
     ),
     OnboardingQuestion(
         "c4a_step_goal",
-        "🚶 Günlük adım hedefiniz kaç olsun?\n(örn: 8000)",
+        "🚶 Günlük adım hedefiniz kaç olsun?\n"
+        "Butondan seçebilir veya sayı yazabilirsiniz (örn: 8000)",
         QuestionType.NUMBER_INPUT,
         [],
         "sport",

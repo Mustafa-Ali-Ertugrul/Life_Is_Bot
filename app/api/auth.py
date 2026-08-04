@@ -56,6 +56,7 @@ def verify_telegram_init_data(init_data: str) -> dict[str, Any]:
 
 def verify_api_key(api_key: str) -> bool:
     """Verify the static API key (fallback for local tooling)."""
-    if not settings.api_key:
+    candidates = [candidate for candidate in (settings.api_key, settings.api_key_fallback) if candidate]
+    if not candidates:
         return False
-    return hmac.compare_digest(api_key, settings.api_key)
+    return any(hmac.compare_digest(api_key, candidate) for candidate in candidates)

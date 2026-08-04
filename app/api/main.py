@@ -17,6 +17,8 @@ from app.api.rate_limit import limiter
 from app.api.routers.habits import router as habits_router
 from app.api.routers.health import router as health_router
 from app.api.routers.medications import router as medications_router
+from app.api.routers.onboarding import router as onboarding_router
+from app.api.routers.preferences import router as preferences_router
 from app.api.routers.reports import router as reports_router
 from app.api.routers.sport import router as sport_router
 from app.api.routers.step import router as step_router
@@ -93,8 +95,10 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health_router)
+    app.include_router(preferences_router)
     app.include_router(habits_router)
     app.include_router(medications_router)
+    app.include_router(onboarding_router)
     app.include_router(reports_router)
     app.include_router(sport_router)
     app.include_router(step_router)
