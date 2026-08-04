@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     api_cors_origins: list[str] = ["*"]
     api_auth_max_age: int = 86400
     api_key: str = ""
+    api_key_fallback: str = ""
     webhook_mode: bool = False
     telegram_webhook_url: str = ""
     telegram_webhook_secret: str = ""
