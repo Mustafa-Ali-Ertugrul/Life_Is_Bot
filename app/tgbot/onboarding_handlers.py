@@ -186,6 +186,9 @@ async def onboarding_number_input(update: Update, context: ContextTypes.DEFAULT_
         return ANSWER
 
     raw = (update.effective_message.text or "").strip()
+    if "-" in raw:
+        await update.effective_message.reply_text(ONBOARDING_INVALID_NUMBER)
+        return ANSWER
     digits = "".join(ch for ch in raw if ch.isdigit())
     if not digits:
         await update.effective_message.reply_text(ONBOARDING_INVALID_NUMBER)
