@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_preferences_api(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
     # List preferences

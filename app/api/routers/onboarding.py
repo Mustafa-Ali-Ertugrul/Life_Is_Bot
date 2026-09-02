@@ -160,9 +160,7 @@ async def submit_answer(
 
     user = await _get_user(db, user_id)
     if user.onboarding_completed_at is None:
-        profile_type, flags = await onboarding_service.finalize_onboarding(
-            db, user_id, answers
-        )
+        profile_type, flags = await onboarding_service.finalize_onboarding(db, user_id, answers)
     else:
         flags = onboarding_service.compute_flags(answers)
         profile_type = onboarding_service.compute_profile_type(flags)

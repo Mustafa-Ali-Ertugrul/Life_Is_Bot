@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import create_access_token
 from app.models import User
@@ -21,9 +22,7 @@ async def test_invalid_token_rejected(
     api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
 ) -> None:
     monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
-    response = await api_client.get(
-        "/api/habits", headers={"Authorization": f"Bearer {BAD_TOKEN}"}
-    )
+    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {BAD_TOKEN}"})
     assert response.status_code == 401
 
 
@@ -32,9 +31,7 @@ async def test_expired_token_rejected(
 ) -> None:
     monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
     token = create_access_token(api_user.id, expires_days=-1)
-    response = await api_client.get(
-        "/api/habits", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
@@ -43,19 +40,16 @@ async def test_unregistered_user_rejected(
 ) -> None:
     monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
     token = create_access_token(999_999)
-    response = await api_client.get(
-        "/api/habits", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
 async def test_inactive_user_rejected(
     api_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
-    db_session,
+    db_session: AsyncSession,
 ) -> None:
     from app.models import User as UserModel
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     session: AsyncSession = db_session
     user = UserModel(name="inactive", consent_given=True, is_active=False)
@@ -63,9 +57,7 @@ async def test_inactive_user_rejected(
     await session.flush()
     monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
     token = create_access_token(user.id)
-    response = await api_client.get(
-        "/api/habits", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
@@ -90,9 +82,7 @@ async def test_provisioning_token_issued(
 
 
 async def test_invalid_provisioning_key_rejected(api_client: AsyncClient) -> None:
-    response = await api_client.post(
-        "/api/auth/token", headers={"X-Provisioning-Key": "wrong-key"}
-    )
+    response = await api_client.post("/api/auth/token", headers={"X-Provisioning-Key": "wrong-key"})
     assert response.status_code == 401
 
 

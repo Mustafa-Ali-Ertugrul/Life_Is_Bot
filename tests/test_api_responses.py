@@ -18,9 +18,7 @@ async def _create_habit(api_client: AsyncClient, auth_headers: dict[str, str]) -
     return int(response.json()["id"])
 
 
-async def test_submit_taken_response(
-    api_client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_submit_taken_response(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
     med_id = await _create_medication(api_client, auth_headers)
     response = await api_client.post(
         "/api/responses",

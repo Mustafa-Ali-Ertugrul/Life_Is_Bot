@@ -202,7 +202,11 @@ def test_number_input_keyboard_has_quick_buttons() -> None:
     rows = keyboard.inline_keyboard
     labels = [button.text for row in rows for button in row]
     assert labels == ["5.000", "7.500", "10.000", "15.000"]
-    assert all(button.callback_data.startswith(CB_ANS_PREFIX) for row in rows for button in row)
+    assert all(
+        isinstance(button.callback_data, str) and button.callback_data.startswith(CB_ANS_PREFIX)
+        for row in rows
+        for button in row
+    )
 
 
 async def test_text_when_buttons_expected_hint(user_id: int, session_factory_patch: None) -> None:

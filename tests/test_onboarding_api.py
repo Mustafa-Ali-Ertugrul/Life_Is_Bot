@@ -40,9 +40,7 @@ async def test_onboarding_status_initial(
 
 
 @pytest.mark.asyncio
-async def test_onboarding_full_flow(
-    api_client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_onboarding_full_flow(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
     answered = 0
     done = False
     result = None
@@ -94,9 +92,7 @@ async def test_onboarding_full_flow(
 
 
 @pytest.mark.asyncio
-async def test_onboarding_skip(
-    api_client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_onboarding_skip(api_client: AsyncClient, auth_headers: dict[str, str]) -> None:
     res = await api_client.post("/api/onboarding/skip", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["skipped"] is True

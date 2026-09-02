@@ -41,10 +41,7 @@ async def list_preferences(
         pref = await preference_service.get_or_create_preference(db, user_id, bot_key)
         preferences.append(pref)
     await db.commit()
-    return [
-        BotPreferenceResponse(bot_key=p.bot_key, enabled=p.enabled)
-        for p in preferences
-    ]
+    return [BotPreferenceResponse(bot_key=p.bot_key, enabled=p.enabled) for p in preferences]
 
 
 @router.patch("/{bot_key}", response_model=BotPreferenceResponse)
@@ -60,11 +57,9 @@ async def toggle_preference(
     """Enable or disable a specific bot module."""
     try:
         key_enum = BotKey(bot_key)
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid bot_key: {bot_key}")
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=f"Invalid bot_key: {bot_key}") from err
 
-    pref = await preference_service.toggle_preference(
-        db, user_id, key_enum, body.enabled
-    )
+    pref = await preference_service.toggle_preference(db, user_id, key_enum, body.enabled)
     await db.commit()
     return BotPreferenceResponse(bot_key=pref.bot_key, enabled=pref.enabled)

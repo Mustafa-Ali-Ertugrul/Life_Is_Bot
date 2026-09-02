@@ -1,7 +1,7 @@
 """Authentication primitives: JWT issuance and provisioning key verification."""
 
 import hmac
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 
@@ -18,7 +18,7 @@ def create_access_token(user_id: int, *, expires_days: int | None = None) -> str
     """Create a signed HS256 JWT for a user."""
     if not settings.jwt_secret:
         raise AuthError("JWT secret not configured")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire_days = expires_days or settings.jwt_expire_days
     payload = {
         "sub": str(user_id),
