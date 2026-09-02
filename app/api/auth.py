@@ -88,14 +88,17 @@ def verify_telegram_init_data(init_data: str) -> dict[str, Any]:
     if not hmac.compare_digest(computed_hash, received_hash):
         raise AuthError("initData hash mismatch")
     auth_date_raw = parsed.get("auth_date")
-    if auth_date_raw:
-        try:
-            auth_date = int(auth_date_raw)
-            now_ts = int(datetime.now(UTC).timestamp())
-            if abs(now_ts - auth_date) > TELEGRAM_INITDATA_MAX_AGE_SECONDS:
-                raise AuthError("initData expired")
-        except ValueError as exc:
-            raise AuthError("invalid auth_date") from exc
+    if not auth_date_raw:
+        raise AuthError("initData missing auth_date")
+    try:
+        auth_date = int(auth_date_raw)
+    except ValueError as exc:
+        raise AuthError("invalid auth_date") from exc
+    now_ts = int(datetime.now(UTC).timestamp())
+    if auth_date > now_ts + 300:
+        raise AuthError("initData auth_date in future")
+    if now_ts - auth_date > TELEGRAM_INITDATA_MAX_AGE_SECONDS:
+        raise AuthError("initData expired")
     user_json = parsed.get("user")
     if user_json:
         try:

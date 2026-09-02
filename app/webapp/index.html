@@ -803,7 +803,7 @@
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 
