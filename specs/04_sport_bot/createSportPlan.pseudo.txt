@@ -1,0 +1,16 @@
+function createSportPlan(user, sportType, days, time):
+
+    plan = createSportPlan()
+
+    plan.user_id = user.id
+    plan.sport_type = sportType
+    plan.days_of_week = days
+    plan.time_of_day = time
+    plan.reminder_before_minutes = 30
+    plan.is_active = true
+
+    save(plan)
+
+    generateSportSessionsForNext7Days(plan)
+
+    sendConfirmation(user, "Spor planı oluşturuldu.")

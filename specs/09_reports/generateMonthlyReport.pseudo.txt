@@ -1,0 +1,26 @@
+function generateMonthlyReport(user, yearMonth):
+
+    events = getReminderEventsForMonth(user.id, yearMonth)
+
+    grouped = groupEventsByBotAndItem(events)
+
+    report = createMonthlyReport()
+
+    report.user_id = user.id
+    report.month = yearMonth
+
+    report.total_events = count(events)
+    report.total_positive = countPositive(events)
+    report.total_negative = countNegative(events)
+    report.total_no_response = countNoResponse(events)
+
+    report.adherence_rate = calculateAdherence(events)
+
+    report.missed_items = findMissedItems(events)
+    report.no_response_items = findNoResponseItems(events)
+
+    report.details_json = grouped
+
+    save(report)
+
+    sendMonthlySummary(user, report)

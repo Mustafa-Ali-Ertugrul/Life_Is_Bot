@@ -1,0 +1,17 @@
+function completeHabit(user, habitId, source):
+
+    habit = getHabit(habitId)
+
+    if habit.user_id != user.id:
+        reject()
+
+    log = createHabitLog()
+    log.habit_id = habit.id
+    log.user_id = user.id
+    log.completed_at = now()
+    log.status = "done"
+    log.source = source
+
+    save(log)
+
+    sendConfirmation(user, "Rutin tamamlandı.")

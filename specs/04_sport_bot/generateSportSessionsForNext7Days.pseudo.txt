@@ -1,0 +1,14 @@
+function generateSportSessionsForNext7Days(plan):
+
+    dates = getNext7DaysMatchingDays(plan.days_of_week)
+
+    for each date in dates:
+        session = createSportSession()
+
+        session.sport_plan_id = plan.id
+        session.user_id = plan.user_id
+        session.session_date = date
+        session.session_time = plan.time_of_day
+        session.status = "scheduled"
+
+        save(session)

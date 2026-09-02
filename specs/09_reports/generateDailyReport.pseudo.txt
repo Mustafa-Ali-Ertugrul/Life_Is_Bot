@@ -1,0 +1,23 @@
+function generateDailyReport(user, date):
+
+    events = getReminderEvents(user.id, date)
+
+    total = count(events)
+    positive = count(events where status = positive)
+    negative = count(events where status = negative)
+    noResponse = count(events where status = no_response)
+
+    report = createDailyReport()
+
+    report.user_id = user.id
+    report.date = date
+    report.total = total
+    report.positive = positive
+    report.negative = negative
+    report.no_response = noResponse
+
+    report.details_json = groupEventsByBot(events)
+
+    save(report)
+
+    sendDailySummary(user, report)

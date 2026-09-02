@@ -1,0 +1,15 @@
+function startAssessment(user, templateKey):
+
+    template = getAssessmentTemplate(templateKey)
+
+    assessment = createAssessment()
+    assessment.user_id = user.id
+    assessment.template_id = template.id
+    assessment.status = "in_progress"
+    assessment.started_at = now()
+
+    save(assessment)
+
+    questions = getQuestions(template.id)
+
+    askNextQuestion(user, assessment, questions)

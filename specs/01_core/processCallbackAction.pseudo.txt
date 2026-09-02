@@ -1,0 +1,26 @@
+function processCallbackAction(user, action):
+
+    reminderEvent = getReminderEvent(action.eventId)
+
+    if reminderEvent.user_id != user.id:
+        reject()
+
+    switch action.type:
+
+        case "positive":
+            saveResponse(reminderEvent, "positive")
+            updateMessage("Kaydedildi ✅")
+            sendPositiveFeedback(user, reminderEvent)
+
+        case "negative":
+            saveResponse(reminderEvent, "negative")
+            askReason(user, reminderEvent)
+
+        case "snooze":
+            newTime = now() + action.delayMinutes
+            rescheduleReminder(reminderEvent, newTime)
+            updateMessage("Hatırlatma ertelendi.")
+
+        case "cancel":
+            cancelReminder(reminderEvent)
+            updateMessage("İptal edildi.")

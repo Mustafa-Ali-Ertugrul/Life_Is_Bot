@@ -1,0 +1,14 @@
+function checkSupplementWarnings(user, supplementName):
+
+    warnings = []
+
+    if userHasChronicCondition(user):
+        warnings.add("Kronik durumun var. Doktoruna danışman önerilir.")
+
+    if userHasActiveMedication(user):
+        warnings.add("Düzenli ilaç kullanıyorsun. Supplement etkileşimi olabilir.")
+
+    if supplementName is highRiskSupplement:
+        warnings.add("Bu supplement bazı durumlarda dikkat gerektirir.")
+
+    return warnings

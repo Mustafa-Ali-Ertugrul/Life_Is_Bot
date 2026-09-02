@@ -1,0 +1,27 @@
+function handleTelegramUpdate(update):
+
+    telegramUser = update.from
+
+    user = findUserByTelegramId(telegramUser.id)
+
+    if user does not exist:
+        user = createPendingUser(telegramUser)
+
+    if update is message:
+        text = update.text
+        intent = parseIntent(text)
+        routeIntent(user, intent)
+
+    if update is callback_query:
+        callbackData = update.data
+        action = parseCallback(callbackData)
+
+        if action is invalid:
+            answerCallback("Geçersiz istek")
+            return
+
+        if action.userId != user.id:
+            answerCallback("Bu işlem sana ait değil")
+            return
+
+        processCallbackAction(user, action)

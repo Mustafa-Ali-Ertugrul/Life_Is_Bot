@@ -1,0 +1,22 @@
+function addMedication(user, name, dose, times, withFood, isPermanent, endDate):
+
+    medication = createMedication()
+
+    medication.user_id = user.id
+    medication.name = name
+    medication.dose = dose
+    medication.with_food = withFood
+    medication.is_permanent = isPermanent
+    medication.end_date = endDate
+    medication.is_active = true
+
+    save(medication)
+
+    for each time in times:
+        schedule = createMedicationSchedule()
+        schedule.medication_id = medication.id
+        schedule.time_of_day = time
+        schedule.is_active = true
+        save(schedule)
+
+    sendConfirmation(user, "İlaç eklendi.")

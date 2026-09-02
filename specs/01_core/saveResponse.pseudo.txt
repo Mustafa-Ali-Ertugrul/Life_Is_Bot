@@ -1,0 +1,23 @@
+function saveResponse(reminderEvent, response, reason = null, source = "telegram_inline"):
+
+    oldResponses = getResponsesForEvent(reminderEvent.id)
+
+    for each old in oldResponses:
+        old.is_current = false
+        save(old)
+
+    newResponse = createUserResponse()
+
+    newResponse.reminder_event_id = reminderEvent.id
+    newResponse.user_id = reminderEvent.user_id
+    newResponse.bot_key = reminderEvent.bot_key
+    newResponse.response = response
+    newResponse.reason = reason
+    newResponse.source = source
+    newResponse.responded_at = now()
+    newResponse.is_current = true
+
+    save(newResponse)
+
+    reminderEvent.status = mapResponseToStatus(response)
+    save(reminderEvent)
