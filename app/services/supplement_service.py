@@ -53,12 +53,14 @@ async def create_supplement_plan(
     return plan
 
 
-async def list_supplement_plans(session: AsyncSession, user_id: int) -> list[SupplementPlan]:
-    result = await session.execute(
-        select(SupplementPlan)
-        .where(SupplementPlan.user_id == user_id)
-        .order_by(SupplementPlan.created_at)
-    )
+async def list_supplement_plans(
+    session: AsyncSession, user_id: int, *, active_only: bool = False
+) -> list[SupplementPlan]:
+    stmt = select(SupplementPlan).where(SupplementPlan.user_id == user_id)
+    if active_only:
+        stmt = stmt.where(SupplementPlan.is_active.is_(True))
+    stmt = stmt.order_by(SupplementPlan.created_at)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 

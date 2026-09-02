@@ -4,7 +4,12 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from app.services.report_service import MonthlyBreakdown, MonthlyReport, YearlyReport
+from app.services.report_service import (
+    MonthDaysReport,
+    MonthlyBreakdown,
+    MonthlyReport,
+    YearlyReport,
+)
 from app.services.streak_service import StreakReport
 
 
@@ -94,6 +99,26 @@ class ReportMonthlySchema(BaseModel):
             total_snoozed=report.total_snoozed,
             total_pending=report.total_pending,
             completion_rate=report.completion_rate,
+        )
+
+
+class ReportMonthDaysSchema(BaseModel):
+    user_id: int
+    year: int
+    month: int
+    bot_key: str | None
+    scheduled_days: list[date]
+    completed_days: list[date]
+
+    @classmethod
+    def from_report(cls, report: MonthDaysReport) -> "ReportMonthDaysSchema":
+        return cls(
+            user_id=report.user_id,
+            year=report.year,
+            month=report.month,
+            bot_key=report.bot_key,
+            scheduled_days=report.scheduled_days,
+            completed_days=report.completed_days,
         )
 
 

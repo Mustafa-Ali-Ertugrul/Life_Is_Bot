@@ -1,0 +1,18 @@
+function interpretItem(user, item):
+
+    if item.bot_key == "habit_bot":
+        return interpretHabit(user, item)
+
+    if item.bot_key == "sport_bot":
+        return interpretSport(user, item)
+
+    if item.bot_key == "supplement_bot":
+        return interpretSupplement(user, item)
+
+    if item.bot_key == "step_bot":
+        return interpretStep(user, item)
+
+    if item.bot_key == "medication_bot":
+        return interpretMedication(user, item)
+
+    return genericInterpretation(item)

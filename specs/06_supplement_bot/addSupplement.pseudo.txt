@@ -1,0 +1,28 @@
+function addSupplement(user, name, dose, times, withFood):
+
+    warnings = checkSupplementWarnings(user, name)
+
+    if warnings is not empty:
+        showWarnings(user, warnings)
+
+        if user does not acknowledge:
+            cancel()
+
+    supplement = createSupplement()
+
+    supplement.user_id = user.id
+    supplement.name = name
+    supplement.dose = dose
+    supplement.with_food = withFood
+    supplement.is_active = true
+
+    save(supplement)
+
+    for each time in times:
+        schedule = createSupplementSchedule()
+        schedule.supplement_id = supplement.id
+        schedule.time_of_day = time
+        schedule.is_active = true
+        save(schedule)
+
+    sendConfirmation(user, "Supplement eklendi.")

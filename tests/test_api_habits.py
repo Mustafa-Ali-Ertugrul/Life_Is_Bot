@@ -110,6 +110,17 @@ async def test_delete_habit_soft(api_client: AsyncClient, auth_headers: dict[str
     assert fetched.json()["is_active"] is False
 
 
+async def test_delete_habit_removes_from_list(
+    api_client: AsyncClient, auth_headers: dict[str, str]
+) -> None:
+    created = await api_client.post("/api/habits", headers=auth_headers, json=HABIT_PAYLOAD)
+    habit_id = created.json()["id"]
+    await api_client.delete(f"/api/habits/{habit_id}", headers=auth_headers)
+    response = await api_client.get("/api/habits", headers=auth_headers)
+    assert response.status_code == 200
+    assert all(item["id"] != habit_id for item in response.json()["items"])
+
+
 async def test_habits_require_auth(api_client: AsyncClient) -> None:
     response = await api_client.get("/api/habits")
     assert response.status_code == 401

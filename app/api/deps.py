@@ -7,10 +7,10 @@ from fastapi import Depends, Header, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import AuthError, verify_api_key, verify_telegram_init_data
+from app.api.auth import AuthError, decode_access_token
 from app.core.config import Settings, settings
 from app.core.database import unit_of_work
-from app.models import TelegramAccount
+from app.models import TelegramAccount, User
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -32,40 +32,34 @@ async def pagination_params(
     return limit, offset
 
 
+async def resolve_first_user_id(session: AsyncSession) -> int:
+    """Resolve the first registered user id (provisioning/local tooling)."""
+    result = await session.execute(
+        select(TelegramAccount.user_id).order_by(TelegramAccount.user_id).limit(1)
+    )
+    user_id = result.scalar_one_or_none()
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="no users found")
+    return user_id
+
+
 async def get_current_user(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_db)],
     authorization: Annotated[str | None, Header()] = None,
-    x_api_key: Annotated[str | None, Header()] = None,
 ) -> int:
-    """Resolve the authenticated user id from Telegram initData or API key."""
-    if authorization and authorization.startswith("Bearer "):
-        try:
-            tg_user = verify_telegram_init_data(authorization[7:])
-        except AuthError as exc:
-            raise HTTPException(status_code=401, detail=str(exc)) from exc
-        telegram_user_id = tg_user.get("id")
-        if telegram_user_id is None:
-            raise HTTPException(status_code=401, detail="missing telegram user id")
-        result = await session.execute(
-            select(TelegramAccount.user_id).where(
-                TelegramAccount.telegram_user_id == str(telegram_user_id)
-            )
-        )
-        user_id = result.scalar_one_or_none()
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="user not registered")
-        request.state.user_id = user_id
-        return user_id
-
-    if x_api_key and verify_api_key(x_api_key):
-        result = await session.execute(
-            select(TelegramAccount.user_id).order_by(TelegramAccount.user_id).limit(1)
-        )
-        user_id = result.scalar_one_or_none()
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="no users found")
-        request.state.user_id = user_id
-        return user_id
-
-    raise HTTPException(status_code=401, detail="authentication required")
+    """Resolve the authenticated user id from a bearer JWT."""
+    if not (authorization and authorization.startswith("Bearer ")):
+        raise HTTPException(status_code=401, detail="authentication required")
+    token = authorization[7:]
+    try:
+        user_id = decode_access_token(token)
+    except AuthError:
+        raise HTTPException(status_code=401, detail="authentication required") from None
+    result = await session.execute(
+        select(User.id).where(User.id == user_id, User.is_active.is_(True))
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=401, detail="user not registered")
+    request.state.user_id = user_id
+    return user_id

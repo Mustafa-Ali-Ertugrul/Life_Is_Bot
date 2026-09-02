@@ -37,10 +37,14 @@ async def create_habit(
     return habit
 
 
-async def list_habits(session: AsyncSession, user_id: int) -> list[Habit]:
-    result = await session.execute(
-        select(Habit).where(Habit.user_id == user_id).order_by(Habit.created_at)
-    )
+async def list_habits(
+    session: AsyncSession, user_id: int, *, active_only: bool = False
+) -> list[Habit]:
+    stmt = select(Habit).where(Habit.user_id == user_id)
+    if active_only:
+        stmt = stmt.where(Habit.is_active.is_(True))
+    stmt = stmt.order_by(Habit.created_at)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 

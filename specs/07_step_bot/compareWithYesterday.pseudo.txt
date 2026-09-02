@@ -1,0 +1,12 @@
+function compareWithYesterday(user, date):
+
+    today = getStepDaily(user.id, date)
+    yesterday = getStepDaily(user.id, date - 1 day)
+
+    difference = today.steps - yesterday.steps
+
+    if difference > 0:
+        sendMessage(user, "Bugün düne göre daha çok hareket ettin.")
+
+    if today.steps < getUserStepTarget(user):
+        sendMessage(user, "Bugünkü adım hedefinin altındasın.")

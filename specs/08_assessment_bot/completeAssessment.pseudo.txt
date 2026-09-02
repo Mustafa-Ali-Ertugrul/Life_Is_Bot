@@ -1,0 +1,19 @@
+function completeAssessment(assessmentId):
+
+    answers = getAnswers(assessmentId)
+
+    riskFlags = evaluateRiskRules(answers)
+
+    report = buildAssessmentReport(answers, riskFlags)
+
+    assessment = getAssessment(assessmentId)
+    assessment.status = "completed"
+    assessment.completed_at = now()
+    assessment.report_json = report
+
+    save(assessment)
+
+    if riskFlags is not empty:
+        showRiskWarnings(assessment.user_id, riskFlags)
+
+    createHealthConditionsFromReport(assessment.user_id, report)

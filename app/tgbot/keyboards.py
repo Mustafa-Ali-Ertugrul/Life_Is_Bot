@@ -49,7 +49,17 @@ def onboarding_intro_keyboard() -> InlineKeyboardMarkup:
 
 def onboarding_question_keyboard(question: OnboardingQuestion) -> InlineKeyboardMarkup | None:
     if question.question_type is QuestionType.NUMBER_INPUT:
-        return None
+        quick_rows = [
+            [
+                InlineKeyboardButton("5.000", callback_data=CB_ANS_PREFIX + "5000"),
+                InlineKeyboardButton("7.500", callback_data=CB_ANS_PREFIX + "7500"),
+            ],
+            [
+                InlineKeyboardButton("10.000", callback_data=CB_ANS_PREFIX + "10000"),
+                InlineKeyboardButton("15.000", callback_data=CB_ANS_PREFIX + "15000"),
+            ],
+        ]
+        return InlineKeyboardMarkup(quick_rows)
     keyboard: list[list[InlineKeyboardButton]] = []
     for option in question.options:
         if question.question_type is QuestionType.MULTI_CHOICE:

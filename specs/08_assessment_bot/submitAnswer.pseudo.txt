@@ -1,0 +1,14 @@
+function submitAnswer(user, assessmentId, questionKey, answer):
+
+    question = getQuestion(questionKey)
+
+    if question.required and answer is empty:
+        showError("Bu soru zorunludur.")
+        return
+
+    saveAnswer(assessmentId, question.id, answer)
+
+    if allRequiredQuestionsAnswered(assessmentId):
+        completeAssessment(assessmentId)
+    else:
+        askNextQuestion(user, assessmentId)

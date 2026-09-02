@@ -32,7 +32,7 @@ async def list_sport_plans(
     session: Annotated[AsyncSession, Depends(get_db)],
     pagination: Annotated[tuple[int, int], Depends(pagination_params)],
 ) -> PaginatedResponse[SportResponse]:
-    plans = await sport_service.list_sport_plans(session, user_id)
+    plans = await sport_service.list_sport_plans(session, user_id, active_only=True)
     limit, offset = pagination
     return paginate([SportResponse.model_validate(plan) for plan in plans], limit, offset)
 

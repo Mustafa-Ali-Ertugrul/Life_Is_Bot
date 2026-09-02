@@ -1,0 +1,16 @@
+function toggleBot(user, botKey, enabled):
+
+    preference = getBotPreference(user.id, botKey)
+
+    if preference does not exist:
+        preference = createDefaultPreference(user.id, botKey)
+
+    preference.enabled = enabled
+    preference.updated_at = now()
+
+    saveBotPreference(preference)
+
+    if enabled:
+        sendBotActivatedMessage(user, botKey)
+    else:
+        sendBotDeactivatedMessage(user, botKey)

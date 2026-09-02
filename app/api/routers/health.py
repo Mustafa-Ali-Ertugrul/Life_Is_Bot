@@ -17,6 +17,7 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health", response_model=HealthResponse)
+@router.get("/api/health", response_model=HealthResponse)
 async def health(db: Annotated[AsyncSession, Depends(get_db)]) -> HealthResponse:
     """Return service health and database connectivity."""
     try:

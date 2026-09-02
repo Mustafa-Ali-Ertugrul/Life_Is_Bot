@@ -1,0 +1,36 @@
+function routeIntent(user, intent):
+
+    switch intent.command:
+
+        case "start":
+            showWelcome(user)
+
+        case "botlar":
+            showBotList(user)
+
+        case "ayarlar":
+            showSettings(user)
+
+        case "rapor":
+            showReportMenu(user)
+
+        case "rutin":
+            routeToHabitBot(user, intent)
+
+        case "spor":
+            routeToSportBot(user, intent)
+
+        case "supplement":
+            routeToSupplementBot(user, intent)
+
+        case "adim":
+            routeToStepBot(user, intent)
+
+        case "saglik":
+            routeToAssessmentBot(user, intent)
+
+        case "ilac":
+            routeToMedicationBot(user, intent)
+
+        default:
+            showHelp(user)

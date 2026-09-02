@@ -10,6 +10,7 @@ from app.api.deps import get_current_user, get_db
 from app.api.rate_limit import REPORTS_LIMIT, limiter
 from app.api.schemas.report import (
     ReportDailySchema,
+    ReportMonthDaysSchema,
     ReportMonthlySchema,
     ReportStreakSchema,
     ReportWeeklySchema,
@@ -67,6 +68,27 @@ async def monthly_report(
         month = month or current.month
     report = await report_service.generate_monthly_report(session, user_id, year, month)
     return ReportMonthlySchema.from_report(report)
+
+
+@router.get("/monthly/days", response_model=ReportMonthDaysSchema)
+@limiter.limit(REPORTS_LIMIT)
+async def monthly_report_days(
+    request: Request,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    user_id: Annotated[int, Depends(get_current_user)],
+    bot_key: Annotated[str | None, Query()] = None,
+    year: Annotated[int | None, Query(ge=1)] = None,
+    month: Annotated[int | None, Query(ge=1, le=12)] = None,
+) -> ReportMonthDaysSchema:
+    """Return per-day scheduled/completed dates for a bot within a month."""
+    if year is None or month is None:
+        user = await settings_service.get_settings(session, user_id)
+        current = now_in(user.timezone)
+        year = year or current.year
+        month = month or current.month
+    report = await report_service.generate_month_days_report(session, user_id, year, month, bot_key)
+    return ReportMonthDaysSchema.from_report(report)
 
 
 @router.get("/yearly", response_model=ReportYearlySchema)

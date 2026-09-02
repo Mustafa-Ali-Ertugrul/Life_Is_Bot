@@ -32,7 +32,7 @@ async def list_medications(
     session: Annotated[AsyncSession, Depends(get_db)],
     pagination: Annotated[tuple[int, int], Depends(pagination_params)],
 ) -> PaginatedResponse[MedicationResponse]:
-    plans = await medication_service.list_medication_plans(session, user_id)
+    plans = await medication_service.list_medication_plans(session, user_id, active_only=True)
     limit, offset = pagination
     return paginate([MedicationResponse.model_validate(plan) for plan in plans], limit, offset)
 

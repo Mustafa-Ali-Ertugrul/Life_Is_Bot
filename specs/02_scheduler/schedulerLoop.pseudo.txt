@@ -1,0 +1,36 @@
+every 1 minute:
+
+    current_time = getCurrentTime()
+
+    users = getActiveUsers()
+
+    for each user in users:
+
+        if user.timezone != systemTimezone:
+            local_time = convertToLocal(current_time, user.timezone)
+        else:
+            local_time = current_time
+
+        dueItems = getDueReminderItems(user, local_time)
+
+        for each item in dueItems:
+
+            if isAlreadyNotifiedToday(item):
+                continue
+
+            if isAlreadyRespondedToday(item):
+                continue
+
+            reminderEvent = createReminderEvent(user, item)
+
+            interpretation = interpretItem(user, item)
+
+            message = buildReminderMessage(interpretation)
+
+            buttons = buildResponseButtons(reminderEvent.id)
+
+            sendTelegramMessage(user, message, buttons)
+
+            markReminderAsNotified(reminderEvent)
+
+            logNotification(reminderEvent, message)

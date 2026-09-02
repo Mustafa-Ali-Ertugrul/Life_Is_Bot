@@ -1,0 +1,22 @@
+function syncSteps(user, date, steps, source):
+
+    if steps < 0:
+        reject()
+
+    existing = getStepDaily(user.id, date)
+
+    if existing exists:
+        existing.steps = steps
+        existing.source = source
+        existing.synced_at = now()
+        save(existing)
+    else:
+        record = createStepDaily()
+        record.user_id = user.id
+        record.date = date
+        record.steps = steps
+        record.source = source
+        record.synced_at = now()
+        save(record)
+
+    compareWithYesterday(user, date)

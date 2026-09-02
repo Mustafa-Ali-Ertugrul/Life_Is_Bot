@@ -149,10 +149,10 @@ async def test_unauthenticated_request_is_rejected(api_client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
-async def test_api_key_requests_are_rate_limited(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+async def test_authenticated_requests_are_rate_limited(
+    api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
-    """API-key authenticated requests consume the per-user counter."""
-    response = await api_client.get("/api/habits", headers=api_key_headers)
+    """JWT-authenticated requests consume the per-user counter."""
+    response = await api_client.get("/api/habits", headers=auth_headers)
     assert response.status_code == 200
     assert response.headers["x-ratelimit-limit"] == str(CRUD_LIMIT)

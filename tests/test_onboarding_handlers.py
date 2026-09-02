@@ -11,7 +11,7 @@ from app.core.onboarding_questions import ONBOARDING_QUESTIONS, QuestionType
 from app.models import User
 from app.services import onboarding_service, user_service
 from app.tgbot import onboarding_handlers
-from app.tgbot.keyboards import CB_ANS_PREFIX, CB_TOGGLE_PREFIX
+from app.tgbot.keyboards import CB_ANS_PREFIX, CB_TOGGLE_PREFIX, onboarding_question_keyboard
 from app.tgbot.messages import (
     ONBOARDING_CANCELLED,
     ONBOARDING_CHOICE_HINT,
@@ -162,6 +162,51 @@ async def test_number_input_valid_advances(user_id: int, session_factory_patch: 
     assert context.user_data["ob_answers"]["c4a_step_goal"] == "8000"
     text = update.effective_message.reply_text.call_args.args[0]
     assert "Takviye" in text
+
+
+async def test_number_input_lenient_text_advances(
+    user_id: int, session_factory_patch: None
+) -> None:
+    context = _context(user_id)
+    _setup_at(context, "c4a_step_goal")
+
+    update = _message_update("8000 adım")
+    state = await onboarding_handlers.onboarding_number_input(update, context)
+
+    assert state == onboarding_handlers.ANSWER
+    assert context.user_data["ob_answers"]["c4a_step_goal"] == "8000"
+    text = update.effective_message.reply_text.call_args.args[0]
+    assert "Takviye" in text
+
+
+async def test_number_input_quick_button_advances(
+    user_id: int, session_factory_patch: None
+) -> None:
+    context = _context(user_id)
+    _setup_at(context, "c4a_step_goal")
+
+    update = _callback_update()
+    update.callback_query.data = CB_ANS_PREFIX + "10000"
+    state = await onboarding_handlers.onboarding_answer(update, context)
+
+    assert state == onboarding_handlers.ANSWER
+    assert context.user_data["ob_answers"]["c4a_step_goal"] == "10000"
+    text = update.callback_query.edit_message_text.call_args.args[0]
+    assert "Takviye" in text
+
+
+def test_number_input_keyboard_has_quick_buttons() -> None:
+    question = next(q for q in ONBOARDING_QUESTIONS if q.key == "c4a_step_goal")
+    keyboard = onboarding_question_keyboard(question)
+    assert keyboard is not None
+    rows = keyboard.inline_keyboard
+    labels = [button.text for row in rows for button in row]
+    assert labels == ["5.000", "7.500", "10.000", "15.000"]
+    assert all(
+        isinstance(button.callback_data, str) and button.callback_data.startswith(CB_ANS_PREFIX)
+        for row in rows
+        for button in row
+    )
 
 
 async def test_text_when_buttons_expected_hint(user_id: int, session_factory_patch: None) -> None:

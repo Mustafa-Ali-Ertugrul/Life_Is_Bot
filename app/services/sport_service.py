@@ -37,10 +37,14 @@ async def create_sport_plan(
     return plan
 
 
-async def list_sport_plans(session: AsyncSession, user_id: int) -> list[SportPlan]:
-    result = await session.execute(
-        select(SportPlan).where(SportPlan.user_id == user_id).order_by(SportPlan.created_at)
-    )
+async def list_sport_plans(
+    session: AsyncSession, user_id: int, *, active_only: bool = False
+) -> list[SportPlan]:
+    stmt = select(SportPlan).where(SportPlan.user_id == user_id)
+    if active_only:
+        stmt = stmt.where(SportPlan.is_active.is_(True))
+    stmt = stmt.order_by(SportPlan.created_at)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 

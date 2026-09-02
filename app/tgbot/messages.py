@@ -99,7 +99,8 @@ ONBOARDING_INTRO = (
 )
 ONBOARDING_QUESTION = "📋 Profil Oluşturma ({index}/{total})\n\n{text}"
 ONBOARDING_INVALID_NUMBER = (
-    "Geçersiz adım hedefi. 1000 ile 100000 arasında bir sayı girin.\n\n/iptal ile vazgeçebilirsin."
+    "Geçersiz adım hedefi. Butonlardan birini seçin veya 1000 ile 100000 arasında bir sayı yazın "
+    "(örn: 8000).\n\n/iptal ile vazgeçebilirsin."
 )
 ONBOARDING_MULTI_HINT = "En az bir seçenek seçin veya /iptal ile vazgeçin."
 ONBOARDING_CHOICE_HINT = "Lütfen butonlardan birini seçin."
