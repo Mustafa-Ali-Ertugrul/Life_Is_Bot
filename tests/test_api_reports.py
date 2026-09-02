@@ -271,6 +271,98 @@ async def test_monthly_counts_events(
     assert body["completion_rate"] == round(1 * 100 / 3, 1)
 
 
+async def test_month_days_filters_by_bot_key(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+    db_session: AsyncSession,
+) -> None:
+    current = now_in(api_user.timezone)
+    day1 = date(current.year, current.month, 1)
+    day3 = date(current.year, current.month, 3)
+    day5 = date(current.year, current.month, 5)
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        day1,
+        bot_key=BotKey.SPORT.value,
+        related_type="s",
+        label="sport-done",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.NEGATIVE.value,
+        day3,
+        bot_key=BotKey.SPORT.value,
+        related_type="s",
+        label="sport-missed",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        day5,
+        bot_key=BotKey.HABIT.value,
+        related_type="h",
+        label="habit-done",
+    )
+    response = await api_client.get(
+        f"/api/reports/monthly/days?bot_key={BotKey.SPORT.value}"
+        f"&year={current.year}&month={current.month}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["bot_key"] == BotKey.SPORT.value
+    assert body["scheduled_days"] == [day1.isoformat(), day3.isoformat()]
+    assert body["completed_days"] == [day1.isoformat()]
+
+
+async def test_month_days_all_bots(
+    api_client: AsyncClient,
+    auth_headers: dict[str, str],
+    api_user: User,
+    db_session: AsyncSession,
+) -> None:
+    current = now_in(api_user.timezone)
+    day1 = date(current.year, current.month, 1)
+    day5 = date(current.year, current.month, 5)
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        day1,
+        bot_key=BotKey.SPORT.value,
+        related_type="s",
+        label="sport",
+    )
+    await _add_event(
+        db_session,
+        api_user.id,
+        ReminderStatus.POSITIVE.value,
+        day5,
+        bot_key=BotKey.HABIT.value,
+        related_type="h",
+        label="habit",
+    )
+    response = await api_client.get(
+        f"/api/reports/monthly/days?year={current.year}&month={current.month}",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["bot_key"] is None
+    assert body["scheduled_days"] == [day1.isoformat(), day5.isoformat()]
+    assert body["completed_days"] == [day1.isoformat(), day5.isoformat()]
+
+
+async def test_month_days_requires_auth(api_client: AsyncClient) -> None:
+    response = await api_client.get("/api/reports/monthly/days?year=2026&month=1")
+    assert response.status_code == 401
+
+
 async def test_reports_scoped_to_user(
     api_client: AsyncClient,
     auth_headers: dict[str, str],

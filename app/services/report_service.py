@@ -89,6 +89,18 @@ class MonthlyReport:
 
 
 @dataclass(frozen=True)
+class MonthDaysReport:
+    """Per-day schedule/completion flags for a single bot within a month."""
+
+    user_id: int
+    year: int
+    month: int
+    bot_key: str | None
+    scheduled_days: list[date] = field(default_factory=list)
+    completed_days: list[date] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class MonthlyBreakdown:
     """Single month's statistics within a yearly report."""
 
@@ -278,6 +290,52 @@ async def generate_monthly_report(
     return MonthlyReport(user_id=user_id, year=year, month=month, bot_stats=bot_stats)
 
 
+async def generate_month_days_report(
+    session: AsyncSession,
+    user_id: int,
+    year: int,
+    month: int,
+    bot_key: str | None = None,
+) -> MonthDaysReport:
+    """Return per-day scheduled/completed flags for a bot within a month.
+
+    Completed days are those with at least one positive (POSITIVE) event.
+    Scheduled days are those with at least one non-cancelled/suppressed event.
+    """
+    _, last_day = monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, last_day) + timedelta(days=1)
+
+    query = select(ReminderEvent).where(
+        ReminderEvent.user_id == user_id,
+        ReminderEvent.scheduled_local_date >= month_start,
+        ReminderEvent.scheduled_local_date < month_end,
+        ReminderEvent.status.notin_(
+            [ReminderStatus.CANCELLED.value, ReminderStatus.SUPPRESSED.value]
+        ),
+    )
+    if bot_key:
+        query = query.where(ReminderEvent.bot_key == bot_key)
+    result = await session.execute(query)
+    events = list(result.scalars().all())
+
+    scheduled = {event.scheduled_local_date for event in events}
+    completed = {
+        event.scheduled_local_date
+        for event in events
+        if event.status == ReminderStatus.POSITIVE.value
+    }
+
+    return MonthDaysReport(
+        user_id=user_id,
+        year=year,
+        month=month,
+        bot_key=bot_key,
+        scheduled_days=sorted(scheduled),
+        completed_days=sorted(completed),
+    )
+
+
 async def generate_yearly_report(
     session: AsyncSession,
     user_id: int,
@@ -368,11 +426,13 @@ def _weakest_day(per_day: dict[int, list[int]]) -> int | None:
 __all__ = [
     "BotMonthlyStats",
     "DailyReport",
+    "MonthDaysReport",
     "MonthlyBreakdown",
     "MonthlyReport",
     "WeeklyReport",
     "YearlyReport",
     "generate_daily_report",
+    "generate_month_days_report",
     "generate_monthly_report",
     "generate_weekly_report",
     "generate_yearly_report",

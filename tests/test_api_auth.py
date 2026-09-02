@@ -1,70 +1,98 @@
 """API authentication tests."""
 
-import time
-
 import pytest
 from httpx import AsyncClient
 
+from app.api.auth import create_access_token
 from app.models import User
-from tests.conftest import TEST_API_KEY, TEST_BOT_TOKEN, TEST_TELEGRAM_USER_ID, make_init_data
+from tests.conftest import TEST_API_KEY, TEST_JWT_SECRET
 
-BAD_HASH = "0" * 64
+BAD_TOKEN = "not-a-jwt"
 
 
-async def test_valid_init_data_authenticates(
+async def test_valid_jwt_authenticates(
     api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
     response = await api_client.get("/api/habits", headers=auth_headers)
     assert response.status_code == 200
 
 
-async def test_invalid_hash_rejected(
+async def test_invalid_token_rejected(
     api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
 ) -> None:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    init_data = make_init_data(TEST_TELEGRAM_USER_ID)
-    init_data = init_data.rsplit("hash=", 1)[0] + f"hash={BAD_HASH}"
-    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {init_data}"})
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    response = await api_client.get(
+        "/api/habits", headers={"Authorization": f"Bearer {BAD_TOKEN}"}
+    )
     assert response.status_code == 401
 
 
-async def test_expired_init_data_rejected(
+async def test_expired_token_rejected(
     api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
 ) -> None:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    old_auth_date = int(time.time()) - 90_000
-    init_data = make_init_data(TEST_TELEGRAM_USER_ID, auth_date=old_auth_date)
-    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {init_data}"})
-    assert response.status_code == 401
-
-
-async def test_missing_user_rejected(
-    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
-) -> None:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    init_data = make_init_data()
-    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {init_data}"})
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    token = create_access_token(api_user.id, expires_days=-1)
+    response = await api_client.get(
+        "/api/habits", headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 401
 
 
 async def test_unregistered_user_rejected(
     api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
 ) -> None:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    init_data = make_init_data(999_999)
-    response = await api_client.get("/api/habits", headers={"Authorization": f"Bearer {init_data}"})
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    token = create_access_token(999_999)
+    response = await api_client.get(
+        "/api/habits", headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 401
 
 
-async def test_valid_api_key_authenticates(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+async def test_inactive_user_rejected(
+    api_client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+    db_session,
 ) -> None:
-    response = await api_client.get("/api/habits", headers=api_key_headers)
+    from app.models import User as UserModel
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    session: AsyncSession = db_session
+    user = UserModel(name="inactive", consent_given=True, is_active=False)
+    session.add(user)
+    await session.flush()
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    token = create_access_token(user.id)
+    response = await api_client.get(
+        "/api/habits", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 401
+
+
+async def test_provisioning_token_issued(
+    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, api_user: User
+) -> None:
+    monkeypatch.setattr("app.api.auth.settings.provisioning_key", TEST_API_KEY)
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    response = await api_client.post(
+        "/api/auth/token", headers={"X-Provisioning-Key": TEST_API_KEY}
+    )
     assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["expires_in"] > 0
+    assert body["access_token"]
+
+    habits = await api_client.get(
+        "/api/habits", headers={"Authorization": f"Bearer {body['access_token']}"}
+    )
+    assert habits.status_code == 200
 
 
-async def test_invalid_api_key_rejected(api_client: AsyncClient) -> None:
-    response = await api_client.get("/api/habits", headers={"X-API-Key": "wrong-key"})
+async def test_invalid_provisioning_key_rejected(api_client: AsyncClient) -> None:
+    response = await api_client.post(
+        "/api/auth/token", headers={"X-Provisioning-Key": "wrong-key"}
+    )
     assert response.status_code == 401
 
 

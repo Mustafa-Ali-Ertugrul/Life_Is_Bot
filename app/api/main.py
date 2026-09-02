@@ -3,29 +3,30 @@
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from app.api import API_VERSION
 from app.api.exceptions import register_exception_handlers
 from app.api.rate_limit import limiter
+from app.api.routers.auth import router as auth_router
 from app.api.routers.habits import router as habits_router
 from app.api.routers.health import router as health_router
 from app.api.routers.medications import router as medications_router
 from app.api.routers.onboarding import router as onboarding_router
 from app.api.routers.preferences import router as preferences_router
 from app.api.routers.reports import router as reports_router
+from app.api.routers.responses import router as responses_router
 from app.api.routers.sport import router as sport_router
 from app.api.routers.step import router as step_router
 from app.api.routers.supplement import router as supplement_router
 from app.api.routers.webhook import router as webhook_router
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.modules.registry import setup_default_modules
 from app.scheduler.engine import stop_scheduler
 from app.tgbot.adapter import (
     ApplicationT,
@@ -68,6 +69,7 @@ def _retry_after_seconds(request: Request) -> int:
 
 
 def create_app() -> FastAPI:
+    setup_default_modules()
     app = FastAPI(title="Life Is Bot API", version=API_VERSION, lifespan=lifespan)
 
     app.state.limiter = limiter
@@ -94,19 +96,19 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    app.include_router(auth_router)
     app.include_router(health_router)
     app.include_router(preferences_router)
     app.include_router(habits_router)
     app.include_router(medications_router)
     app.include_router(onboarding_router)
     app.include_router(reports_router)
+    app.include_router(responses_router)
     app.include_router(sport_router)
     app.include_router(step_router)
     app.include_router(supplement_router)
     app.include_router(webhook_router)
 
-    webapp_dir = Path(__file__).resolve().parent.parent / "webapp"
-    app.mount("/webapp", StaticFiles(directory=webapp_dir, html=True), name="webapp")
     return app
 
 

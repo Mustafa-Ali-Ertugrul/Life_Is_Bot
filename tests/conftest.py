@@ -1,10 +1,5 @@
-import hashlib
-import hmac
-import json
-import time
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from urllib.parse import urlencode
 
 import pytest
 import pytest_asyncio
@@ -12,6 +7,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.api.auth import create_access_token
 from app.api.deps import get_db
 from app.api.main import create_app
 from app.models import Base, TelegramAccount, User
@@ -20,22 +16,9 @@ from app.modules.registry import setup_default_modules
 TELEGRAM_USER_ID = "123456789"
 TELEGRAM_USER_ID_2 = "987654321"
 
-TEST_BOT_TOKEN = "123456:TEST-TOKEN"
+TEST_JWT_SECRET = "test-jwt-secret-0123456789abcdef0123456789abcdef"
 TEST_API_KEY = "test-api-key"
 TEST_TELEGRAM_USER_ID = 777000
-
-
-def make_init_data(telegram_user_id: int | None = None, *, auth_date: int | None = None) -> str:
-    """Build a signed Telegram WebApp initData query string for tests."""
-    params: dict[str, str] = {}
-    if telegram_user_id is not None:
-        user = json.dumps({"id": telegram_user_id, "first_name": "Test"}, separators=(",", ":"))
-        params["user"] = user
-    params["auth_date"] = str(auth_date if auth_date is not None else int(time.time()))
-    check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
-    secret_key = hmac.new(b"WebAppData", TEST_BOT_TOKEN.encode(), hashlib.sha256).digest()
-    params["hash"] = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-    return urlencode(params)
 
 
 @asynccontextmanager
@@ -110,8 +93,8 @@ async def api_user(db_session: AsyncSession) -> User:
 
 @pytest_asyncio.fixture
 async def auth_headers(monkeypatch: pytest.MonkeyPatch, api_user: User) -> dict[str, str]:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    return {"Authorization": f"Bearer {make_init_data(TEST_TELEGRAM_USER_ID)}"}
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    return {"Authorization": f"Bearer {create_access_token(api_user.id)}"}
 
 
 @pytest_asyncio.fixture
@@ -126,11 +109,5 @@ async def api_user_2(db_session: AsyncSession) -> User:
 
 @pytest_asyncio.fixture
 async def auth_headers_user2(monkeypatch: pytest.MonkeyPatch, api_user_2: User) -> dict[str, str]:
-    monkeypatch.setattr("app.api.auth.settings.bot_token", TEST_BOT_TOKEN)
-    return {"Authorization": f"Bearer {make_init_data(int(TELEGRAM_USER_ID_2))}"}
-
-
-@pytest_asyncio.fixture
-async def api_key_headers(monkeypatch: pytest.MonkeyPatch, api_user: User) -> dict[str, str]:
-    monkeypatch.setattr("app.api.auth.settings.api_key", TEST_API_KEY)
-    return {"X-API-Key": TEST_API_KEY}
+    monkeypatch.setattr("app.api.auth.settings.jwt_secret", TEST_JWT_SECRET)
+    return {"Authorization": f"Bearer {create_access_token(api_user_2.id)}"}

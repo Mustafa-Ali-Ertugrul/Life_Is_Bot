@@ -27,9 +27,9 @@ CHOICES = {
 
 @pytest.mark.asyncio
 async def test_onboarding_status_initial(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+    api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
-    res = await api_client.get("/api/onboarding", headers=api_key_headers)
+    res = await api_client.get("/api/onboarding", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["completed"] is False
@@ -41,13 +41,13 @@ async def test_onboarding_status_initial(
 
 @pytest.mark.asyncio
 async def test_onboarding_full_flow(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+    api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
     answered = 0
     done = False
     result = None
 
-    res = await api_client.get("/api/onboarding", headers=api_key_headers)
+    res = await api_client.get("/api/onboarding", headers=auth_headers)
     question = res.json()["question"]
 
     while question is not None:
@@ -61,7 +61,7 @@ async def test_onboarding_full_flow(
         res = await api_client.post(
             "/api/onboarding/answer",
             json={"question_key": key, "answer_value": value},
-            headers=api_key_headers,
+            headers=auth_headers,
         )
         assert res.status_code == 200, res.text
         body = res.json()
@@ -81,13 +81,13 @@ async def test_onboarding_full_flow(
     assert "supplement_bot" in result["enabled_bots"]
     assert result["step_goal"] == 8000
 
-    res = await api_client.get("/api/onboarding", headers=api_key_headers)
+    res = await api_client.get("/api/onboarding", headers=auth_headers)
     data = res.json()
     assert data["completed"] is True
     assert data["question"] is None
     assert data["answers"]["a1_gender"] == "Kadın"
 
-    res = await api_client.get("/api/preferences", headers=api_key_headers)
+    res = await api_client.get("/api/preferences", headers=auth_headers)
     prefs = {p["bot_key"]: p["enabled"] for p in res.json()}
     assert prefs["sport_bot"] is True
     assert prefs["supplement_bot"] is True
@@ -95,13 +95,13 @@ async def test_onboarding_full_flow(
 
 @pytest.mark.asyncio
 async def test_onboarding_skip(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+    api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
-    res = await api_client.post("/api/onboarding/skip", headers=api_key_headers)
+    res = await api_client.post("/api/onboarding/skip", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["skipped"] is True
 
-    res = await api_client.get("/api/onboarding", headers=api_key_headers)
+    res = await api_client.get("/api/onboarding", headers=auth_headers)
     data = res.json()
     assert data["skipped"] is True
     assert data["question"] is None
@@ -109,25 +109,25 @@ async def test_onboarding_skip(
 
 @pytest.mark.asyncio
 async def test_onboarding_invalid_input(
-    api_client: AsyncClient, api_key_headers: dict[str, str]
+    api_client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:
     res = await api_client.post(
         "/api/onboarding/answer",
         json={"question_key": "nope", "answer_value": "x"},
-        headers=api_key_headers,
+        headers=auth_headers,
     )
     assert res.status_code == 400
 
     res = await api_client.post(
         "/api/onboarding/answer",
         json={"question_key": "c4a_step_goal", "answer_value": "abc"},
-        headers=api_key_headers,
+        headers=auth_headers,
     )
     assert res.status_code == 422
 
     res = await api_client.post(
         "/api/onboarding/answer",
         json={"question_key": "c4a_step_goal", "answer_value": "500"},
-        headers=api_key_headers,
+        headers=auth_headers,
     )
     assert res.status_code == 422

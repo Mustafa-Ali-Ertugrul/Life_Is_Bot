@@ -32,7 +32,7 @@ async def list_habits(
     session: Annotated[AsyncSession, Depends(get_db)],
     pagination: Annotated[tuple[int, int], Depends(pagination_params)],
 ) -> PaginatedResponse[HabitResponse]:
-    habits = await habit_service.list_habits(session, user_id)
+    habits = await habit_service.list_habits(session, user_id, active_only=True)
     limit, offset = pagination
     return paginate([HabitResponse.model_validate(habit) for habit in habits], limit, offset)
 

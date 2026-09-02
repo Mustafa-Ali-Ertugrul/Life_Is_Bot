@@ -100,6 +100,17 @@ async def test_delete_sport_plan_soft(
     assert fetched.json()["is_active"] is False
 
 
+async def test_delete_sport_plan_removes_from_list(
+    api_client: AsyncClient, auth_headers: dict[str, str]
+) -> None:
+    created = await api_client.post("/api/sport", headers=auth_headers, json=SPORT_PAYLOAD)
+    plan_id = created.json()["id"]
+    await api_client.delete(f"/api/sport/{plan_id}", headers=auth_headers)
+    response = await api_client.get("/api/sport", headers=auth_headers)
+    assert response.status_code == 200
+    assert all(item["id"] != plan_id for item in response.json()["items"])
+
+
 async def test_sport_plans_require_auth(api_client: AsyncClient) -> None:
     response = await api_client.get("/api/sport")
     assert response.status_code == 401
