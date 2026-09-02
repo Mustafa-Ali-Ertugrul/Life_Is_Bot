@@ -150,12 +150,16 @@ docker compose up -d --build
 
 ## Telegram Mini App (WebApp)
 
-Bot'un menü butonundan açılan mobil web arayüzü (`app/webapp/index.html`) FastAPI tarafından `/webapp/` yolundan sunulur. Streak ve alışkanlıkların (CRUD) yönetimini sağlar; kimlik doğrulama, mevcut initData imzası (`Authorization: Bearer <initData>`) ile yapılır.
+Bot'un menü butonundan açılan mobil web arayüzü (`app/webapp/index.html`) FastAPI tarafından `/webapp` yolundan `StaticFiles` ile sunulur (`app/api/main.py` mount). Streak, alışkanlıklar ve tüm CRUD işlemlerini sağlar; kimlik doğrulama JWT tabanlıdır.
+
+**Auth akışı:** Mini App açılışta `Telegram.WebApp.initData` değerini `POST /api/auth/telegram` endpoint'ine gönderir, HMAC-SHA256 ile doğrulanır (`bot_token` ile `WebAppData` secret) ve karşılığında JWT alır. JWT `localStorage`'da saklanır ve sonraki tüm API çağrılarında `Authorization: Bearer <JWT>` header'ı ile kullanılır. JWT süresi dolduğunda otomatik yenileme yapılır. Doğrudan `initData`'yı Bearer token olarak göndermek artık desteklenmez (401 döner).
+
+**Provisioning endpoint `POST /api/auth/token`:** `X-Provisioning-Key` header'ına ek olarak çok kullanıcılı ortamda `X-Telegram-User-Id` header'ı zorunludur. Tek kullanıcılı lokal geliştirmede header olmadan ilk kullanıcıya fallback yapılır; aksi hâlde `400 telegram_user_id required` döner.
 
 Kullanım önkoşulları:
 
 1. Kullanıcı bota `/start` göndermiş olmalı (aksi hâlde API `401 user not registered` döner).
-2. BotFather'da (`@BotFather`) `/setmenubutton` ile bot seçilip Mini App URL'si (ör. `https://ornek.trycloudflare.com/webapp/`) ve buton metni (ör. "Rutinler") ayarlanır.
+2. BotFather'da (`@BotFather`) `/setmenubutton` ile bot seçilip Mini App URL'si (ör. `https://ornek.trycloudflare.com/webapp/`) ve buton metni (ör. "Rutinler") ayarlanır. `BOT_TOKEN` `.env`'de doğru ayarlı olmalı (initData doğrulaması için gerekli).
 
 Geliştirme:
 
@@ -163,6 +167,7 @@ Geliştirme:
 # API'yi tunnel'ın dinlediği bağlantı noktasında başlat
 uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8080
 # tarayıcıda doğrudan kontrol: https://<tunnel>/webapp/
+# Sağlık kontrolü: https://<tunnel>/api/health
 ```
 
 Not: `trycloudflare.com` adresleri geçicidir; tunnel yeniden başlatılırsa BotFather'da menü butonu yeniden ayarlanmalıdır. İstikrarlı kullanım için kalıcı bir tunnel/domain önerilir.

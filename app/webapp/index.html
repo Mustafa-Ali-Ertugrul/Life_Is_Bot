@@ -536,16 +536,45 @@
     tg.expand();
   }
 
-  const API_BASE = '/api/v1';
+  const API_BASE = '/api';
   let activeTab = 'habits';
+  let jwtToken = localStorage.getItem('jwt_token');
 
-  // Helper function for API calls
+  async function exchangeInitData() {
+    if (!tg?.initData || jwtToken) return jwtToken;
+    try {
+      const res = await fetch(API_BASE + '/auth/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        jwtToken = data.access_token;
+        if (jwtToken) localStorage.setItem('jwt_token', jwtToken);
+      }
+    } catch (e) {}
+    return jwtToken;
+  }
+
   async function api(path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-    if (tg?.initData) {
-      headers['Authorization'] = 'Bearer ' + tg.initData;
+    if (!jwtToken && tg?.initData) {
+      await exchangeInitData();
     }
-    const res = await fetch(API_BASE + path, { ...options, headers });
+    if (jwtToken) {
+      headers['Authorization'] = 'Bearer ' + jwtToken;
+    }
+    let res = await fetch(API_BASE + path, { ...options, headers });
+    if (res.status === 401 && jwtToken && tg?.initData) {
+      localStorage.removeItem('jwt_token');
+      jwtToken = null;
+      await exchangeInitData();
+      if (jwtToken) {
+        headers['Authorization'] = 'Bearer ' + jwtToken;
+        res = await fetch(API_BASE + path, { ...options, headers });
+      }
+    }
     if (res.status === 401) {
       document.getElementById('auth-notice').classList.remove('hidden');
     }
@@ -555,6 +584,10 @@
     }
     if (res.status === 204) return null;
     return res.json();
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function haptic(style = 'light') {
@@ -629,10 +662,10 @@
       listEl.innerHTML = data.items.map(h => `
         <div class="item-row ${!h.enabled ? 'disabled' : ''}">
           <div class="item-main">
-            <div class="item-title">${h.title}</div>
+            <div class="item-title">${esc(h.title)}</div>
             <div class="item-sub">
-              <span>⏰ ${h.reminder_time || 'Hatırlatmasız'}</span>
-              <span>📅 ${fmtDays(h.days_of_week)}</span>
+              <span>⏰ ${esc(h.reminder_time || 'Hatırlatmasız')}</span>
+              <span>📅 ${esc(fmtDays(h.days_of_week))}</span>
             </div>
           </div>
           <button class="switch ${h.enabled ? 'on' : ''}" onclick="toggleHabit(${h.id}, ${!h.enabled})"></button>
@@ -640,7 +673,7 @@
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 
@@ -677,11 +710,11 @@
       listEl.innerHTML = data.items.map(s => `
         <div class="item-row ${!s.enabled ? 'disabled' : ''}">
           <div class="item-main">
-            <div class="item-title">${s.activity_type}</div>
+            <div class="item-title">${esc(s.activity_type)}</div>
             <div class="item-sub">
-              <span>⏱️ ${s.duration_minutes ? s.duration_minutes + ' dk' : 'Süresiz'}</span>
-              <span>⏰ ${s.time_of_day || 'Saat yok'}</span>
-              <span>📅 ${fmtDays(s.days_of_week)}</span>
+              <span>⏱️ ${esc(s.duration_minutes ? s.duration_minutes + ' dk' : 'Süresiz')}</span>
+              <span>⏰ ${esc(s.time_of_day || 'Saat yok')}</span>
+              <span>📅 ${esc(fmtDays(s.days_of_week))}</span>
             </div>
           </div>
           <button class="switch ${s.enabled ? 'on' : ''}" onclick="toggleSport(${s.id}, ${!s.enabled})"></button>
@@ -689,7 +722,7 @@
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 
@@ -718,10 +751,10 @@
       listEl.innerHTML = data.items.map(s => `
         <div class="item-row ${!s.enabled ? 'disabled' : ''}">
           <div class="item-main">
-            <div class="item-title">${s.name} ${s.dosage ? '(' + s.dosage + ')' : ''}</div>
+            <div class="item-title">${esc(s.name)}${s.dosage ? ' (' + esc(s.dosage) + ')' : ''}</div>
             <div class="item-sub">
-              <span>⏰ ${s.reminder_time || s.time_of_day_label || 'Saat yok'}</span>
-              <span>📅 ${fmtDays(s.days_of_week)}</span>
+              <span>⏰ ${esc(s.reminder_time || s.time_of_day_label || 'Saat yok')}</span>
+              <span>📅 ${esc(fmtDays(s.days_of_week))}</span>
             </div>
           </div>
           <button class="switch ${s.enabled ? 'on' : ''}" onclick="toggleSupplement(${s.id}, ${!s.enabled})"></button>
@@ -729,7 +762,7 @@
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 
@@ -758,11 +791,11 @@
       listEl.innerHTML = data.items.map(m => `
         <div class="item-row ${!m.enabled ? 'disabled' : ''}">
           <div class="item-main">
-            <div class="item-title">${m.name} ${m.dose ? '(' + m.dose + ')' : ''}</div>
+            <div class="item-title">${esc(m.name)}${m.dose ? ' (' + esc(m.dose) + ')' : ''}</div>
             <div class="item-sub">
-              <span>⏰ ${m.time_of_day || 'Saat yok'}</span>
-              <span>🍽️ ${m.with_food || 'Aç/Tok fark etmez'}</span>
-              <span>📅 ${fmtDays(m.days_of_week)}</span>
+              <span>⏰ ${esc(m.time_of_day || 'Saat yok')}</span>
+              <span>🍽️ ${esc(m.with_food || 'Aç/Tok fark etmez')}</span>
+              <span>📅 ${esc(fmtDays(m.days_of_week))}</span>
             </div>
           </div>
           <button class="switch ${m.enabled ? 'on' : ''}" onclick="toggleMedication(${m.id}, ${!m.enabled})"></button>
@@ -770,7 +803,7 @@
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 
@@ -818,13 +851,13 @@
       listEl.innerHTML = logs.slice(0, 10).map(l => `
         <div class="item-row">
           <div class="item-main">
-            <div class="item-title">${l.step_count.toLocaleString('tr-TR')} adım</div>
-            <div class="item-sub">📅 ${l.log_date}</div>
+            <div class="item-title">${esc(l.step_count.toLocaleString('tr-TR'))} adım</div>
+            <div class="item-sub">📅 ${esc(l.log_date)}</div>
           </div>
         </div>
       `).join('');
     } catch (e) {
-      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${e.message}</div>`;
+      listEl.innerHTML = `<div class="empty-state">Yüklenemedi: ${esc(e.message)}</div>`;
     }
   }
 

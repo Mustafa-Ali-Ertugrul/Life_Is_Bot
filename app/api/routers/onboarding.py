@@ -89,7 +89,10 @@ def _first_pending_question(answers: dict[str, str]) -> int | None:
 def _validate_value(question: OnboardingQuestion, answer_value: str) -> str:
     if question.question_type is not QuestionType.NUMBER_INPUT:
         return answer_value
-    digits = "".join(ch for ch in answer_value if ch.isdigit())
+    raw = answer_value.strip()
+    if "-" in raw:
+        raise HTTPException(status_code=422, detail="Geçerli bir sayı girin")
+    digits = "".join(ch for ch in raw if ch.isdigit())
     if not digits:
         raise HTTPException(status_code=422, detail="Geçerli bir sayı girin")
     value = int(digits)

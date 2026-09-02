@@ -3,10 +3,12 @@
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from app.api import API_VERSION
@@ -108,6 +110,10 @@ def create_app() -> FastAPI:
     app.include_router(step_router)
     app.include_router(supplement_router)
     app.include_router(webhook_router)
+
+    webapp_dir = Path(__file__).parent.parent / "webapp"
+    if webapp_dir.exists():
+        app.mount("/webapp", StaticFiles(directory=str(webapp_dir), html=True), name="webapp")
 
     return app
 
